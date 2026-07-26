@@ -3,10 +3,9 @@
 This project is a clinical diagnostic dashboard developed for the University of Oklahoma ACS-5513 Machine Learning course. It provides an end-to-end pipeline for exploring heart disease data, training predictive models (KNN, Naive Bayes, SVM), and deploying them for individual diagnostic testing.
 
 ## Project Scope
-- **Interactive EDA**: Visualizing clinical feature distributions and multivariate correlations using gapless histograms and Plotly-based 3D scatter plots.
-- **Clinical Methodology**: A modular training interface allowing researchers to benchmark different classification algorithms.
+- **Interactive EDA**: Visualizing clinical feature distributions and correlations using histograms and Plotly-based 3D scatter plots.
+- **Clinical Methodology**: A modular training interface allowing users to benchmark different classification algorithms.
 - **Model Deployment**: A functional interface for clinical practitioners to input patient metrics and receive diagnostic probabilities.
-- **OU Theming**: Styled with University of Oklahoma Crimson (`#841617`) and Cream (`#FDF9D8`).
 
 ## Local Setup & Execution
 
@@ -17,7 +16,7 @@ This project is a clinical diagnostic dashboard developed for the University of 
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/acs5513.git
+   git clone https://github.com/ACS5513Project/acs5513.git
    cd acs5513
    ```
 2. Install dependencies:
