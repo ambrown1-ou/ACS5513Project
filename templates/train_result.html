@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="result success">
+    <p class="eyebrow">Training complete: {{ result.method|replace('_', ' ')|title }}</p>
+    <h1>Your model is ready.</h1>
+    <div class="metrics-grid">
+        <div class="metric-box">
+            <p class="metric">{{ "%.1f"|format(result.accuracy * 100) }}%</p>
+            <small>accuracy</small>
+        </div>
+        <div class="metric-box">
+            <p class="metric">{{ "%.1f"|format(result.precision * 100) }}%</p>
+            <small>precision</small>
+        </div>
+        <div class="metric-box">
+            <p class="metric">{{ "%.1f"|format(result.recall * 100) }}%</p>
+            <small>recall</small>
+        </div>
+        <div class="metric-box">
+            <p class="metric">{{ "%.1f"|format(result.f1 * 100) }}%</p>
+            <small>F1 score</small>
+        </div>
+    </div>
+    <p style="margin-top: 2rem;">{{ result.rows }} complete rows were used for training and validation. The saved model can now be used for individual predictions.</p>
+    <a class="button-link" href="{{ url_for('web.prediction') }}">Run a prediction <span aria-hidden="true">&#8594;</span></a>
+</section>
+{% endblock %}

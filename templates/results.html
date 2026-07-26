@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
+<section class="page-heading">
+  <p class="eyebrow">Performance Results</p>
+  <h1>Model Benchmarking</h1>
+  <p class="lede">A comparative audit of model performance across disparate clinical datasets.</p>
+</section>
+
+<div class="form-panel">
+  <div style="margin-bottom: 2rem;">
+    <label>Select Dataset and Method
+      <select id="result-select" onchange="filterResults()">
+        <option value="all">All Results</option>
+        {% for item in summary %}
+        <option value="{{ item.dataset|replace(' ', '-') }}-{{ item.method|replace(' ', '-') }}">
+          {{ item.dataset }} - {{ item.method }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div id="results-container">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 2px solid var(--border);">
+          <th style="padding: 0.75rem;">Dataset</th>
+          <th style="padding: 0.75rem;">Method</th>
+          <th style="padding: 0.75rem;">Status</th>
+          <th style="padding: 0.75rem;">Accuracy</th>
+          <th style="padding: 0.75rem;">F1 Score</th>
+          <th style="padding: 0.75rem;">Rows</th>
+        </tr>
+      </thead>
+      <tbody id="results-body">
+        {% for item in summary %}
+        <tr class="result-row" data-id="{{ item.dataset|replace(' ', '-') }}-{{ item.method|replace(' ', '-') }}" style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.75rem;">{{ item.dataset }}</td>
+          <td style="padding: 0.75rem;">{{ item.method }}</td>
+          <td style="padding: 0.75rem;">
+            <span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; background: {% if item.status == 'Success' %}rgba(76, 175, 80, 0.1); color: #2e7d32;{% else %}rgba(244, 67, 54, 0.1); color: #d32f2f;{% endif %}">
+              {{ item.status }}
+            </span>
+            {% if item.error %}
+            <div style="font-size: 0.75rem; color: #d32f2f; margin-top: 0.25rem;">{{ item.error }}</div>
+            {% endif %}
+          </td>
+          <td style="padding: 0.75rem;">{{ item.accuracy }}</td>
+          <td style="padding: 0.75rem;">{{ item.f1 }}</td>
+          <td style="padding: 0.75rem;">{{ item.rows if item.rows else '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function filterResults() {
+  const selectedId = document.getElementById('result-select').value;
+  const rows = document.querySelectorAll('.result-row');
+  
+  rows.forEach(row => {
+    if (selectedId === 'all' || row.getAttribute('data-id') === selectedId) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+</script>
+{% endblock %}

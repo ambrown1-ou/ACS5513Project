@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
+<section class="page-heading">
+  <p class="eyebrow">Model Deployment</p>
+  <h1>Diagnostic Testing</h1>
+  <p class="lede">Applying trained models to individual clinical parameters for classification testing.</p>
+</section>
+<form class="form-panel" method="post">
+  <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 2rem;">
+    <label>Deployment Model
+      <select name="model_name" required>
+        <option value="">Select a model to deploy</option>
+        {% for model in models %}
+        <option value="{{ model }}">{{ model|replace('heart_disease_', '')|replace('.joblib', '')|upper }}</option>
+        {% endfor %}
+      </select>
+      <span class="hint">Choose which trained model to use for this test.</span>
+    </label>
+  </div>
+  <div class="form-grid">
+  {% for field, info in fields.items() %}<label>{{ info.label }}<span class="hint">{{ info.desc }}</span><input type="number" name="{{ field }}" step="any" required></label>{% endfor %}
+  </div>
+  <button type="submit">Run model <span aria-hidden="true">&#8594;</span></button>
+</form>
+{% endblock %}

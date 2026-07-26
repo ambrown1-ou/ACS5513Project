@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
+<section class="page-heading">
+  <p class="eyebrow">Data Exploration</p>
+  <h1>Clinical Feature Analysis</h1>
+  <p class="lede">Investigating feature distributions and multivariate relationships within the clinical data.</p>
+</section>
+<form class="dataset-picker" method="get" action="{{ url_for('web.view_data') }}">
+  <label for="dataset">Dataset</label>
+  <select id="dataset" name="dataset" onchange="this.form.submit()">
+    {% for key, item in datasets.items() %}<option value="{{ key }}" {% if key == dataset_key %}selected{% endif %}>{{ item.label }}</option>{% endfor %}
+  </select>
+  <input type="hidden" name="view" value="{{ view }}">
+</form>
+
+<div class="chart-explanation" style="margin-top: 0; margin-bottom: 2rem;">
+  <p class="eyebrow" style="color: var(--ink); margin-bottom: 0.5rem;">Provenance: {{ dataset.source }}</p>
+  <p>{{ dataset.description }}</p>
+  <p><a href="{{ dataset.link }}" target="_blank" rel="noopener" style="text-decoration: underline;">View original source dataset &nearrow;</a></p>
+</div>
+
+<<nav class="explorer-nav" aria-label="Dataset explorer views">
+  <a class="{{ 'active' if view == 'distributions' else '' }}" href="{{ url_for('web.view_data', view='distributions', dataset=dataset_key) }}">01 <span>Field distributions</span></a>
+  <a class="{{ 'active' if view == 'matrix' else '' }}" href="{{ url_for('web.view_data', view='matrix', dataset=dataset_key) }}">02 <span>Correlation matrix</span></a>
+  <a class="{{ 'active' if view == 'strongest' else '' }}" href="{{ url_for('web.view_data', view='strongest', dataset=dataset_key) }}">03 <span>Strongest pairs</span></a>
+  <a class="{{ 'active' if view == 'custom' else '' }}" href="{{ url_for('web.view_data', view='custom', dataset=dataset_key) }}">04 <span>Custom 2D / 3D plot</span></a>
+</nav>
+
+<section id="dictionary" style="margin-bottom: 4rem;">
+  <h2>Data Dictionary</h2>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Domain / Scale</th>
+          <th>Units</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in data_dictionary %}
+        <tr>
+          <td><code>{{ entry.field }}</code></td>
+          <td>{{ entry.domain }}</td>
+          <td>{{ entry.units }}</td>
+          <td>{{ entry.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if view == 'custom' %}
+<form class="form-panel plot-form" method="post" action="{{ url_for('web.view_data', view='custom') }}">
+  <fieldset>
+    <legend>Plot dimensions</legend>
+    <label class="radio-label"><input type="radio" name="dimensions" value="2" {% if dimensions == "2" %}checked{% endif %}> 2D plot</label>
+    <label class="radio-label"><input type="radio" name="dimensions" value="3" {% if dimensions == "3" %}checked{% endif %}> 3D plot</label>
+  </fieldset>
+  <div class="form-grid">
+    {% for axis, label in [('x_field', 'X parameter'), ('y_field', 'Y parameter'), ('z_field', 'Z parameter')] %}
+    <label class="axis-field {{ 'z-axis-field' if axis == 'z_field' else '' }}">{{ label }}
+      <select name="{{ axis }}" {% if axis != 'z_field' %}required{% endif %}>
+        <option value="">Choose a parameter</option>
+        {% for field in fields %}
+        <option value="{{ field }}" {% if field in selected_fields and selected_fields.index(field) == loop.index0 %}selected{% endif %}>{{ field }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endfor %}
+  </div>
+  <button type="submit">Generate plot <span aria-hidden="true">&#8594;</span></button>
+</form>
+{% endif %}
+{% if plot_image or plot_url %}
+<section class="plot-result">
+  {% if view == 'distributions' %}<h2>Distribution of every field</h2>{% endif %}
+  {% if view == 'matrix' %}<h2>How the fields correlate</h2>{% endif %}
+  {% if view == 'strongest' %}<h2>The strongest 2D relationships</h2>{% endif %}
+  {% if view == 'custom' %}<h2>Custom feature relationship</h2>{% endif %}
+  
+  {% if view == 'distributions' %}
+  <div class="chart-explanation">
+    <p><strong>Clinical Distribution Benchmark</strong></p>
+    <p>Each chart visualizes a single clinical metric across the patient population. These are <strong>frequency histograms</strong> where the height representing the number of patients falling within a specific numeric range. The bars are stacked to show the diagnostic outcome: <strong>No Disease (Green)</strong> vs <strong>Heart Disease (Crimson)</strong>.</p>
+    <p>Summary statistics (Average and Median) are provided below each chart to describe the central tendency of the data for each attribute.</p>
+  </div>
+  {% endif %}
+
+  {% if plot_url %}
+    <img src="{{ plot_url }}" alt="{{ view|replace('_', ' ')|title }} visualization of the heart disease dataset">
+  {% elif view == 'custom' %}
+    <div class="plotly-container">
+      {{ plot_image | safe }}
+    </div>
+  {% else %}
+    <img src="data:image/png;base64,{{ plot_image }}" alt="{{ view|replace('_', ' ')|title }} visualization of the heart disease dataset">
+  {% endif %}
+</section>
+{% endif %}
+{% if strongest_pairs %}
+<section class="pair-list">
+  <p class="eyebrow">Ranked by normalized mutual information</p>
+  <p>NMI ranges from 0 to 1 and detects general dependence after binning continuous fields, including nonlinear relationships. Continuous pairs use a LOWESS trend; coded fields use boxplots or a count heatmap because their numeric codes are categories, not measurements.</p>
+  {% for pair in strongest_pairs %}<div><strong>{{ pair.first }} + {{ pair.second }}</strong><span>NMI {{ '%.2f'|format(pair.mutual_information) }} · r {{ '%.2f'|format(pair.pearson) }} · rho {{ '%.2f'|format(pair.spearman) }}</span></div>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

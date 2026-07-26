@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">ACS-5513: Applied Machine Learning</p>
+  <h1>Heart Disease Classification Analysis</h1>
+  <p class="lede">Applied Computing Masters Program &bull; University of Oklahoma</p>
+</section>
+
+<section id="abstract">
+  <h2>Project Overview</h2>
+  <p>This study is a project for the University of Oklahoma Applied Computing Masters program, evaluating various data visualization and machine learning methods for predicting clinical diagnosis. Using regional health data from Cleveland, Hungary, Switzerland, and Long Beach, we benchmark the efficacy of KNN, Naive Bayes, and SVM models in a clinical classification context.</p>
+</section>
+
+<section id="introduction">
+  <h2>Introduction</h2>
+  <p>The prediction of cardiovascular disease (CVD) involves complex interactions between patient demographics (age, sex) and clinical measurements (cholesterol, heart rate, ST depression). By leveraging interactive visualizations, this project provides insights into how these variables influence diagnostic outcomes.</p>
+</section>
+
+<section class="choices">
+  <a class="choice" href="{{ url_for('web.view_data') }}">
+    <h2>Exploratory Data Analysis</h2>
+    <p>Analyze feature distributions and multivariate relationships through 3D interactive plotting.</p>
+    <span class="action">View Explorer &rarr;</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.train') }}">
+    <h2>Predictive Methodology</h2>
+    <p>Define study parameters, upload datasets, and train benchmarking models.</p>
+    <span class="action">View Training &rarr;</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.view_results') }}">
+    <h2>Statistical Results</h2>
+    <p>Compare Accuracy, Precision, Recall, and F1 scores across regional data sources.</p>
+    <span class="action">View Results &rarr;</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.prediction') }}">
+    <h2>Conclusion & Deployment</h2>
+    <p>Test the clinical application of trained models via interactive patient diagnosis.</p>
+    <span class="action">View Deployment &rarr;</span>
+  </a>
+</section>
+
+<section id="jupyter" style="margin-top: 5rem;">
+  <h2>Appendices</h2>
+  <div class="choices">
+    <a class="choice choice-jupyter" href="http://localhost:8888/lab" target="_blank" rel="noopener">
+      <h2>Interactive Laboratory (Jupyter)</h2>
+      <p>Access the source code and raw notebooks used for this analysis.</p>
+      <span class="action">Open Lab</span>
+    </a>
+  </div>
+</section>
+{% endblock %}

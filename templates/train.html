@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
+<section class="page-heading">
+  <p class="eyebrow">Methodology & Configuration</p>
+  <h1>Study Framework</h1>
+  <p class="lede">Manage datasets and configure benchmarking parameters for clinical classification.</p>
+</section>
+
+<div class="flash info" style="margin-bottom: 2rem; border-left: 4px solid var(--accent); background: rgba(132, 22, 23, 0.05);">
+  <strong>Platform Note:</strong> This demonstration environment uses an ephemeral filesystem. Newly uploaded datasets and trained models will be reset upon session timeout or application restart.
+</div>
+
+<div class="choices" style="grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start;">
+  
+  <section>
+    <h2>1. Data Management</h2>
+    <p>Upload new clinical datasets and define metadata for the study.</p>
+    
+    <form class="form-panel" method="post" enctype="multipart/form-data" style="margin-top: 2rem;">
+      <input type="hidden" name="form_id" value="upload">
+      <label>CSV Data File
+        <input type="file" name="data_file" accept=".csv,text/csv" required>
+      </label>
+      <label>Dataset Label
+        <input type="text" name="label" placeholder="e.g. Cleveland Heart Data" required>
+      </label>
+      <label>Data Source
+        <input type="text" name="source" placeholder="e.g. UCI Machine Learning Repository">
+      </label>
+      <label>Brief Description
+        <textarea name="description" rows="3" placeholder="Clinical context and regional significance..."></textarea>
+      </label>
+      <button type="submit">Upload Dataset &rarr;</button>
+    </form>
+
+    <div style="margin-top: 3rem;">
+      <h3>Available Datasets</h3>
+      <table style="margin-top: 1rem; font-size: 0.8rem;">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key, ds in datasets.items() %}
+          <tr>
+            <td><strong>{{ ds.label }}</strong></td>
+            <td>{{ ds.source }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Model Training</h2>
+    <p>Select a verified dataset and define the learning architecture.</p>
+    
+    <form class="form-panel" method="post" style="margin-top: 2rem;">
+      <input type="hidden" name="form_id" value="train">
+      
+      <label>Select Dataset
+        <select name="dataset" required>
+          <option value="" disabled selected>Choose a dataset...</option>
+          {% for key, ds in datasets.items() %}
+          <option value="{{ key }}">{{ ds.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="form-grid">
+        <label>Learning method
+          <select name="method" required>
+            <option value="knn">K-Nearest Neighbors</option>
+            <option value="naive_bayes">Naive Bayes</option>
+            <option value="svm">Support Vector Machine</option>
+          </select>
+        </label>
+        <label>Validation size
+          <input type="number" name="test_size" value="0.2" min="0.1" max="0.5" step="0.05" required>
+        </label>
+        <label>Random state
+          <input type="number" name="random_state" value="42" min="0" step="1" required>
+        </label>
+        <label>K neighbors (KNN)
+          <input type="number" name="n_neighbors" value="5" min="1" max="50" step="1">
+        </label>
+      </div>
+      
+      <button type="submit" style="background: var(--accent); color: white; border: none;">Initialize Training &rarr;</button>
+    </form>
+  </section>
+
+</div>
+{% endblock %}
