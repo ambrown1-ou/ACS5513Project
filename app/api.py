@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 
-from model import FEATURE_FIELDS, load_model, predict
+from model import load_model, model_exists, predict, validate_feature_values
 
 
 api = Blueprint("api", __name__, url_prefix="/api")
@@ -8,7 +8,7 @@ api = Blueprint("api", __name__, url_prefix="/api")
 
 @api.get("/health")
 def health():
-    return jsonify({"status": "ok", "model_exists": load_model_exists()})
+    return jsonify({"status": "ok", "model_exists": model_exists()})
 
 
 @api.post("/predict")
@@ -17,24 +17,13 @@ def api_predict():
     if not isinstance(payload, dict):
         return jsonify({"error": "Request body must be a JSON object."}), 400
 
-    missing_fields = [field for field in FEATURE_FIELDS if field not in payload]
-    if missing_fields:
-        return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
-
     try:
-        values = {field: float(payload[field]) for field in FEATURE_FIELDS}
+        values = validate_feature_values(payload)
         model = load_model()
         prediction_value, probability = predict(model, values)
-    except (ValueError, TypeError, FileNotFoundError) as error:
-        status_code = 503 if isinstance(error, FileNotFoundError) else 400
-        return jsonify({"error": str(error)}), status_code
+    except (ValueError, TypeError) as error:
+        return jsonify({"error": str(error)}), 400
+    except (FileNotFoundError, OSError) as error:
+        return jsonify({"error": str(error)}), 503
 
     return jsonify({"prediction": prediction_value, "probability": probability})
-
-
-def load_model_exists():
-    try:
-        load_model()
-    except FileNotFoundError:
-        return False
-    return True

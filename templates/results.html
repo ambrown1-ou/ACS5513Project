@@ -8,12 +8,12 @@
 </section>
 
 <div class="form-panel">
-  <div style="margin-bottom: 2rem;">
+  <div class="results-filter">
     <label>Select Dataset and Method
       <select id="result-select" onchange="filterResults()">
         <option value="all">All Results</option>
         {% for item in summary %}
-        <option value="{{ item.dataset|replace(' ', '-') }}-{{ item.method|replace(' ', '-') }}">
+        <option value="{{ item.model_id }}">
           {{ item.dataset }} - {{ item.method }}
         </option>
         {% endfor %}
@@ -21,34 +21,34 @@
     </label>
   </div>
 
-  <div id="results-container">
-    <table style="width: 100%; border-collapse: collapse;">
+  <div id="results-container" class="table-scroll results-table-shell">
+    <table class="results-table">
       <thead>
-        <tr style="text-align: left; border-bottom: 2px solid var(--border);">
-          <th style="padding: 0.75rem;">Dataset</th>
-          <th style="padding: 0.75rem;">Method</th>
-          <th style="padding: 0.75rem;">Status</th>
-          <th style="padding: 0.75rem;">Accuracy</th>
-          <th style="padding: 0.75rem;">F1 Score</th>
-          <th style="padding: 0.75rem;">Rows</th>
+        <tr>
+          <th scope="col">Dataset</th>
+          <th scope="col">Method</th>
+          <th scope="col">Status</th>
+          <th scope="col">Accuracy</th>
+          <th scope="col">F1 Score</th>
+          <th scope="col">Rows</th>
         </tr>
       </thead>
       <tbody id="results-body">
         {% for item in summary %}
-        <tr class="result-row" data-id="{{ item.dataset|replace(' ', '-') }}-{{ item.method|replace(' ', '-') }}" style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 0.75rem;">{{ item.dataset }}</td>
-          <td style="padding: 0.75rem;">{{ item.method }}</td>
-          <td style="padding: 0.75rem;">
-            <span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; background: {% if item.status == 'Success' %}rgba(76, 175, 80, 0.1); color: #2e7d32;{% else %}rgba(244, 67, 54, 0.1); color: #d32f2f;{% endif %}">
+        <tr class="result-row" data-id="{{ item.model_id }}">
+          <td>{{ item.dataset }}</td>
+          <td>{{ item.method }}</td>
+          <td>
+            <span class="status-badge {% if item.status == 'Success' %}is-success{% else %}is-error{% endif %}">
               {{ item.status }}
             </span>
             {% if item.error %}
-            <div style="font-size: 0.75rem; color: #d32f2f; margin-top: 0.25rem;">{{ item.error }}</div>
+            <div class="status-message">{{ item.error }}</div>
             {% endif %}
           </td>
-          <td style="padding: 0.75rem;">{{ item.accuracy }}</td>
-          <td style="padding: 0.75rem;">{{ item.f1 }}</td>
-          <td style="padding: 0.75rem;">{{ item.rows if item.rows else '-' }}</td>
+          <td>{{ item.accuracy }} <small>{{ item.accuracy_std }}</small></td>
+          <td>{{ item.f1 }} <small>{{ item.f1_std }}</small></td>
+          <td>{{ item.rows if item.rows else '-' }}</td>
         </tr>
         {% endfor %}
       </tbody>

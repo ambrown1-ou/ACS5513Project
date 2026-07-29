@@ -1,38 +1,8 @@
 {
-    "Heart_disease_cleveland_new": {
-        "label": "Cleveland Heart Clinic Data",
-        "source": "UCI Machine Learning Repository",
-        "description": "The primary benchmark dataset containing 303 clinical cases from the Cleveland Clinic Foundation. Used for initial model validation and clinical feature distribution analysis.",
-        "link": "https://archive.ics.uci.edu/ml/datasets/heart+disease"
-    },
-    "cleveland": {
-        "source": "Cleveland Clinic Foundation",
-        "description": "Original raw data from the UCI repository. Contains 303 instances. The processed version is commonly used in clinical classification benchmarks.",
-        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
-    },
-    "cleveland_cleaned": {
+    "heart_disease_cleveland_cleaned": {
+        "label": "Cleveland Heart Disease Cleaned Dataset",
         "source": "Cleveland Clinic Foundation (Processed)",
-        "description": "Cleaned version of the Cleveland dataset with missing values handled and categorical variables prepared for machine learning pipelines.",
-        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
-    },
-    "hungarian": {
-        "source": "Hungarian Institute of Cardiology, Budapest",
-        "description": "Clinical data collected by Andras Janosi, M.D. This cohort often shows different distribution patterns in fasting blood sugar and cholesterol compared to the Cleveland set.",
-        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
-    },
-    "switzerland": {
-        "source": "University Hospital, Zurich, Switzerland",
-        "description": "A challenging dataset due to a higher percentage of missing values in certain clinical features. It represents a European patient demographic.",
-        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
-    },
-    "long_beach": {
-        "source": "V.A. Medical Center, Long Beach, CA",
-        "description": "Clinical data provided by Robert Detrano, M.D., Ph.D. This dataset is part of the UCI heart disease collection and serves as a comparative West Coast cohort.",
-        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
-    },
-    "combined": {
-        "source": "UCI Heart Disease Aggregated",
-        "description": "A synthesized dataset combining clinical data from all four regional sources (Cleveland, Hungary, Switzerland, and Long Beach) to provide a more robust and diverse global training set.",
+        "description": "The bundled clinical benchmark dataset for this project. It contains the cleaned Cleveland cases used for training, evaluation, and exploratory analysis.",
         "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
     }
 }

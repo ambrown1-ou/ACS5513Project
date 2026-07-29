@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="result {% if prediction == 1 %}warning{% else %}success{% endif %}">
-  <p class="eyebrow">Diagnostic Conclusion</p>
+  <p class="eyebrow">Patient Prediction Result</p>
   <h1>{% if prediction == 1 %}Primary Indication: Heart Disease{% else %}Primary Indication: Healthy{% endif %}</h1>
   <p class="lede">Clinical evidence synthesized using <strong>{{ model_used|replace('heart_disease_', '')|replace('.joblib', '')|upper }}</strong>.</p>
-  <p class="metric">{{ "%.1f"|format(probability * 100) }}%<small>Statistical Confidence</small></p>
+  <div class="metrics-grid metrics-grid--single">
+    <div class="metric-box">
+      <p class="metric">{{ "%.1f"|format(probability * 100) }}%</p>
+      <small>Predicted Probability</small>
+    </div>
+  </div>
   <p>This is a statistical prediction, not a medical diagnosis.</p>
   <a class="button-link" href="{{ url_for('web.prediction') }}">Run another prediction <span aria-hidden="true">&#8594;</span></a>
 </section>

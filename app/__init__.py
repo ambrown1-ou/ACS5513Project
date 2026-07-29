@@ -16,6 +16,7 @@ def create_app():
         template_folder=str(PROJECT_ROOT / "templates"),
         static_folder=str(PROJECT_ROOT / "static"),
     )
+    app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
     app.secret_key = "heart-disease-app"
     app.register_blueprint(web)
     app.register_blueprint(api)

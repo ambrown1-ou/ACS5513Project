@@ -2,22 +2,22 @@
 {% block content %}
 <a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
 <section class="page-heading">
-  <p class="eyebrow">Methodology & Configuration</p>
-  <h1>Study Framework</h1>
+  <p class="eyebrow">Method</p>
+  <h1>Model Training</h1>
   <p class="lede">Manage datasets and configure benchmarking parameters for clinical classification.</p>
 </section>
 
-<div class="flash info" style="margin-bottom: 2rem; border-left: 4px solid var(--accent); background: rgba(132, 22, 23, 0.05);">
+<div class="flash info">
   <strong>Platform Note:</strong> This demonstration environment uses an ephemeral filesystem. Newly uploaded datasets and trained models will be reset upon session timeout or application restart.
 </div>
 
-<div class="choices" style="grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start;">
+<div class="choices choices--training">
   
   <section>
     <h2>1. Data Management</h2>
     <p>Upload new clinical datasets and define metadata for the study.</p>
     
-    <form class="form-panel" method="post" enctype="multipart/form-data" style="margin-top: 2rem;">
+    <form class="form-panel form-panel--spaced" method="post" enctype="multipart/form-data">
       <input type="hidden" name="form_id" value="upload">
       <label>CSV Data File
         <input type="file" name="data_file" accept=".csv,text/csv" required>
@@ -34,64 +34,89 @@
       <button type="submit">Upload Dataset &rarr;</button>
     </form>
 
-    <div style="margin-top: 3rem;">
+    <div class="dataset-list">
       <h3>Available Datasets</h3>
-      <table style="margin-top: 1rem; font-size: 0.8rem;">
-        <thead>
-          <tr>
-            <th>Label</th>
-            <th>Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for key, ds in datasets.items() %}
-          <tr>
-            <td><strong>{{ ds.label }}</strong></td>
-            <td>{{ ds.source }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-scroll dataset-table-scroll">
+        <table class="dataset-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, ds in datasets.items() %}
+            <tr>
+              <td><strong>{{ ds.label }}</strong></td>
+              <td>{{ ds.source }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
   <section>
     <h2>2. Model Training</h2>
     <p>Select a verified dataset and define the learning architecture.</p>
-    
-    <form class="form-panel" method="post" style="margin-top: 2rem;">
-      <input type="hidden" name="form_id" value="train">
-      
-      <label>Select Dataset
-        <select name="dataset" required>
-          <option value="" disabled selected>Choose a dataset...</option>
-          {% for key, ds in datasets.items() %}
-          <option value="{{ key }}">{{ ds.label }}</option>
-          {% endfor %}
-        </select>
-      </label>
+    <div class="training-layout">
+      <form class="form-panel form-panel--spaced training-form-panel" method="post">
+        <input type="hidden" name="form_id" value="train">
 
-      <div class="form-grid">
-        <label>Learning method
-          <select name="method" required>
-            <option value="knn">K-Nearest Neighbors</option>
-            <option value="naive_bayes">Naive Bayes</option>
-            <option value="svm">Support Vector Machine</option>
+        <label>Select Dataset
+          <select name="dataset" required>
+            <option value="" disabled selected>Choose a dataset...</option>
+            {% for key, ds in datasets.items() %}
+            <option value="{{ key }}">{{ ds.label }}</option>
+            {% endfor %}
           </select>
         </label>
-        <label>Validation size
-          <input type="number" name="test_size" value="0.2" min="0.1" max="0.5" step="0.05" required>
-        </label>
-        <label>Random state
-          <input type="number" name="random_state" value="42" min="0" step="1" required>
-        </label>
-        <label>K neighbors (KNN)
-          <input type="number" name="n_neighbors" value="5" min="1" max="50" step="1">
-        </label>
-      </div>
-      
-      <button type="submit" style="background: var(--accent); color: white; border: none;">Initialize Training &rarr;</button>
-    </form>
+
+        <div class="form-grid">
+          <label>Learning method
+            <select name="method" required>
+              <option value="knn">K-Nearest Neighbors</option>
+              <option value="naive_bayes">Naive Bayes</option>
+              <option value="svm">Support Vector Machine</option>
+            </select>
+          </label>
+          <label>Validation folds
+            <input type="number" name="cv_folds" value="5" min="2" max="10" step="1" required>
+          </label>
+          <label>Random state
+            <input type="number" name="random_state" value="42" min="0" step="1" required>
+          </label>
+          <label>K neighbors (KNN only)
+            <input type="number" name="n_neighbors" value="5" min="1" max="50" step="1">
+          </label>
+        </div>
+
+        <button type="submit">Initialize Training &rarr;</button>
+      </form>
+
+      <aside class="training-guide training-guide--sidebar">
+        <p class="eyebrow">Training Input Guide</p>
+        <p class="training-guide-lede">Stratified cross-validation is shared across all methods. KNN also uses the neighbor count; the other methods keep their defaults fixed in this UI.</p>
+        <div class="training-guide-grid">
+          <article class="training-guide-card">
+            <h3>K-Nearest Neighbors</h3>
+            <p><strong>Inputs:</strong> dataset, validation folds, random state, and K neighbors.</p>
+            <p><strong>Meaning:</strong> the model compares each case to the nearest training examples and predicts by vote.</p>
+          </article>
+          <article class="training-guide-card">
+            <h3>Naive Bayes</h3>
+            <p><strong>Inputs:</strong> dataset, validation folds, and random state.</p>
+            <p><strong>Meaning:</strong> the model scores each class probabilistically from the feature values.</p>
+          </article>
+          <article class="training-guide-card">
+            <h3>Support Vector Machine</h3>
+            <p><strong>Inputs:</strong> dataset, validation folds, and random state.</p>
+            <p><strong>Meaning:</strong> the model learns a separating boundary between the classes.</p>
+          </article>
+        </div>
+      </aside>
+    </div>
   </section>
 
 </div>

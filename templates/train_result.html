@@ -6,22 +6,31 @@
     <div class="metrics-grid">
         <div class="metric-box">
             <p class="metric">{{ "%.1f"|format(result.accuracy * 100) }}%</p>
-            <small>accuracy</small>
+            <small>accuracy +/- {{ "%.1f"|format(result.accuracy_std * 100) }}%</small>
         </div>
         <div class="metric-box">
             <p class="metric">{{ "%.1f"|format(result.precision * 100) }}%</p>
-            <small>precision</small>
+            <small>precision +/- {{ "%.1f"|format(result.precision_std * 100) }}%</small>
         </div>
         <div class="metric-box">
             <p class="metric">{{ "%.1f"|format(result.recall * 100) }}%</p>
-            <small>recall</small>
+            <small>recall +/- {{ "%.1f"|format(result.recall_std * 100) }}%</small>
         </div>
         <div class="metric-box">
             <p class="metric">{{ "%.1f"|format(result.f1 * 100) }}%</p>
-            <small>F1 score</small>
+            <small>F1 score +/- {{ "%.1f"|format(result.f1_std * 100) }}%</small>
         </div>
     </div>
-    <p style="margin-top: 2rem;">{{ result.rows }} complete rows were used for training and validation. The saved model can now be used for individual predictions.</p>
+    {% if metrics_plot %}
+    <div class="chart-frame">
+        <h2>Training Metrics Chart</h2>
+        <img
+            src="data:image/png;base64,{{ metrics_plot }}"
+            alt="Bar chart showing training accuracy, precision, recall, and F1 score"
+        >
+    </div>
+    {% endif %}
+    <p>{{ result.rows }} complete rows were used. Metrics are means across {{ result.cv_folds }} stratified validation folds; the saved model was then fit on all complete rows.</p>
     <a class="button-link" href="{{ url_for('web.prediction') }}">Run a prediction <span aria-hidden="true">&#8594;</span></a>
 </section>
 {% endblock %}

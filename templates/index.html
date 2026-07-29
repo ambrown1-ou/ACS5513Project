@@ -11,6 +11,19 @@
   <p>This study is a project for the University of Oklahoma Applied Computing Masters program, evaluating various data visualization and machine learning methods for predicting clinical diagnosis. Using regional health data from Cleveland, Hungary, Switzerland, and Long Beach, we benchmark the efficacy of KNN, Naive Bayes, and SVM models in a clinical classification context.</p>
 </section>
 
+<section id="method">
+  <h2>Method</h2>
+  <p>The application follows this workflow:</p>
+  <ul class="workflow-list">
+    <li>Load a clinical dataset from the available source files or a local upload.</li>
+    <li>Explore the data with distributions, correlations, and custom plots.</li>
+    <li>Train one of the supported supervised models on the selected dataset.</li>
+    <li>Compare the resulting performance metrics across runs and datasets.</li>
+    <li>Use a saved model to make a patient-level prediction for one case.</li>
+  </ul>
+  <p>The supported methods are K-Nearest Neighbors, Naive Bayes, and Support Vector Machine. Each method is evaluated with standard classification measures such as accuracy, precision, recall, and F1 score so the results can be compared on the same basis.</p>
+</section>
+
 <section id="introduction">
   <h2>Introduction</h2>
   <p>The prediction of cardiovascular disease (CVD) involves complex interactions between patient demographics (age, sex) and clinical measurements (cholesterol, heart rate, ST depression). By leveraging interactive visualizations, this project provides insights into how these variables influence diagnostic outcomes.</p>
@@ -23,8 +36,8 @@
     <span class="action">View Explorer &rarr;</span>
   </a>
   <a class="choice" href="{{ url_for('web.train') }}">
-    <h2>Predictive Methodology</h2>
-    <p>Define study parameters, upload datasets, and train benchmarking models.</p>
+    <h2>Model Training</h2>
+    <p>Upload datasets, configure parameters, and train benchmarking models.</p>
     <span class="action">View Training &rarr;</span>
   </a>
   <a class="choice" href="{{ url_for('web.view_results') }}">
@@ -33,8 +46,8 @@
     <span class="action">View Results &rarr;</span>
   </a>
   <a class="choice" href="{{ url_for('web.prediction') }}">
-    <h2>Conclusion & Deployment</h2>
-    <p>Test the clinical application of trained models via interactive patient diagnosis.</p>
+    <h2>Prediction Test</h2>
+    <p>Enter patient inputs and review the model's prediction for a single case.</p>
     <span class="action">View Deployment &rarr;</span>
   </a>
 </section>

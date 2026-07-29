@@ -14,22 +14,22 @@
   <input type="hidden" name="view" value="{{ view }}">
 </form>
 
-<div class="chart-explanation" style="margin-top: 0; margin-bottom: 2rem;">
-  <p class="eyebrow" style="color: var(--ink); margin-bottom: 0.5rem;">Provenance: {{ dataset.source }}</p>
+<div class="chart-explanation chart-explanation--intro">
+  <p class="eyebrow chart-source">Provenance: {{ dataset.source }}</p>
   <p>{{ dataset.description }}</p>
-  <p><a href="{{ dataset.link }}" target="_blank" rel="noopener" style="text-decoration: underline;">View original source dataset &nearrow;</a></p>
+  <p><a class="source-link" href="{{ dataset.link }}" target="_blank" rel="noopener">View original source dataset &nearrow;</a></p>
 </div>
 
-<<nav class="explorer-nav" aria-label="Dataset explorer views">
+<nav class="explorer-nav" aria-label="Dataset explorer views">
   <a class="{{ 'active' if view == 'distributions' else '' }}" href="{{ url_for('web.view_data', view='distributions', dataset=dataset_key) }}">01 <span>Field distributions</span></a>
   <a class="{{ 'active' if view == 'matrix' else '' }}" href="{{ url_for('web.view_data', view='matrix', dataset=dataset_key) }}">02 <span>Correlation matrix</span></a>
   <a class="{{ 'active' if view == 'strongest' else '' }}" href="{{ url_for('web.view_data', view='strongest', dataset=dataset_key) }}">03 <span>Strongest pairs</span></a>
-  <a class="{{ 'active' if view == 'custom' else '' }}" href="{{ url_for('web.view_data', view='custom', dataset=dataset_key) }}">04 <span>Custom 2D / 3D plot</span></a>
+  <a class="{{ 'active' if view == 'custom' else '' }}" href="{{ url_for('web.view_data', view='custom', dataset=dataset_key) }}">04 <span>Custom feature plot</span></a>
 </nav>
 
-<section id="dictionary" style="margin-bottom: 4rem;">
-  <h2>Data Dictionary</h2>
-  <div style="overflow-x: auto;">
+<details id="dictionary" class="dictionary-panel">
+  <summary>Data Dictionary</summary>
+  <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -51,22 +51,34 @@
       </tbody>
     </table>
   </div>
-</section>
+</details>
 
 {% if view == 'custom' %}
-<form class="form-panel plot-form" method="post" action="{{ url_for('web.view_data', view='custom') }}">
-  <fieldset>
+<form class="form-panel plot-form" method="post" action="{{ url_for('web.view_data', view='custom', dataset=dataset_key) }}">
+  <input type="hidden" name="dataset" value="{{ dataset_key }}">
+  <div class="plot-form-header">
+    <div>
+      <p class="eyebrow">Custom Plot Builder</p>
+      <p class="plot-form-title">Shape the relationship view</p>
+    </div>
+    <p class="plot-guidance">
+      Choose x and y plus a color field for 2D plots. Choose x, y, z, and a color field for 3D plots. Use a coded or domain field for grouped colors, or a numeric field for a gradient.
+    </p>
+  </div>
+  <fieldset class="plot-dimension-fieldset">
     <legend>Plot dimensions</legend>
-    <label class="radio-label"><input type="radio" name="dimensions" value="2" {% if dimensions == "2" %}checked{% endif %}> 2D plot</label>
-    <label class="radio-label"><input type="radio" name="dimensions" value="3" {% if dimensions == "3" %}checked{% endif %}> 3D plot</label>
+    <div class="dimension-toggle">
+      <label class="dimension-chip"><input type="radio" name="dimensions" value="2" {% if dimensions == "2" %}checked{% endif %}><span>2D plot</span></label>
+      <label class="dimension-chip"><input type="radio" name="dimensions" value="3" {% if dimensions == "3" %}checked{% endif %}><span>3D plot</span></label>
+    </div>
   </fieldset>
   <div class="form-grid">
-    {% for axis, label in [('x_field', 'X parameter'), ('y_field', 'Y parameter'), ('z_field', 'Z parameter')] %}
-    <label class="axis-field {{ 'z-axis-field' if axis == 'z_field' else '' }}">{{ label }}
-      <select name="{{ axis }}" {% if axis != 'z_field' %}required{% endif %}>
+    {% for axis, label in [('x_field', 'X axis'), ('y_field', 'Y axis'), ('z_field', 'Z axis'), ('color_field', 'Color field')] %}
+    <label class="axis-field {{ 'z-axis-field' if axis == 'z_field' else '' }}"{% if axis == 'z_field' %} id="z-axis-field"{% endif %} {% if axis == 'z_field' and dimensions != '3' %}hidden{% endif %}>{{ label }}
+      <select name="{{ axis }}" {% if axis != 'z_field' or dimensions == '3' %}required{% endif %}>
         <option value="">Choose a parameter</option>
         {% for field in fields %}
-        <option value="{{ field }}" {% if field in selected_fields and selected_fields.index(field) == loop.index0 %}selected{% endif %}>{{ field }}</option>
+        <option value="{{ field }}" {% if field == selected_fields.get(axis, '') %}selected{% endif %}>{{ field }}</option>
         {% endfor %}
       </select>
     </label>
@@ -74,6 +86,29 @@
   </div>
   <button type="submit">Generate plot <span aria-hidden="true">&#8594;</span></button>
 </form>
+<script>
+(function () {
+  const dimensionRadios = document.querySelectorAll('input[name="dimensions"]');
+  const zFieldWrapper = document.getElementById('z-axis-field');
+  const zFieldSelect = zFieldWrapper ? zFieldWrapper.querySelector('select[name="z_field"]') : null;
+
+  function updatePlotFields() {
+    const selectedDimension = document.querySelector('input[name="dimensions"]:checked');
+    const is3D = selectedDimension && selectedDimension.value === '3';
+
+    if (zFieldWrapper) {
+      zFieldWrapper.hidden = !is3D;
+    }
+
+    if (zFieldSelect) {
+      zFieldSelect.required = is3D;
+    }
+  }
+
+  dimensionRadios.forEach((radio) => radio.addEventListener('change', updatePlotFields));
+  updatePlotFields();
+})();
+</script>
 {% endif %}
 {% if plot_image or plot_url %}
 <section class="plot-result">
@@ -85,7 +120,7 @@
   {% if view == 'distributions' %}
   <div class="chart-explanation">
     <p><strong>Clinical Distribution Benchmark</strong></p>
-    <p>Each chart visualizes a single clinical metric across the patient population. These are <strong>frequency histograms</strong> where the height representing the number of patients falling within a specific numeric range. The bars are stacked to show the diagnostic outcome: <strong>No Disease (Green)</strong> vs <strong>Heart Disease (Crimson)</strong>.</p>
+    <p>Each chart visualizes a single clinical metric across the patient population. Numeric fields use shared bins with side-by-side bars, while coded fields use grouped bars. Bar height represents the number of patients in each value or range, colored by diagnosis: <strong>No Disease (Green)</strong> vs <strong>Heart Disease (Crimson)</strong>.</p>
     <p>Summary statistics (Average and Median) are provided below each chart to describe the central tendency of the data for each attribute.</p>
   </div>
   {% endif %}
