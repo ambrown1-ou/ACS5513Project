@@ -3,6 +3,7 @@
 <section class="result success">
     <p class="eyebrow">Training complete: {{ result.method|replace('_', ' ')|title }}</p>
     <h1>Your model is ready.</h1>
+    <p class="model-name">{{ model_name }}</p>
     <div class="metrics-grid">
         <div class="metric-box">
             <p class="metric">{{ "%.1f"|format(result.accuracy * 100) }}%</p>

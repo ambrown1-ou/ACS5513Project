@@ -3,7 +3,7 @@
 <section class="result {% if prediction == 1 %}warning{% else %}success{% endif %}">
   <p class="eyebrow">Patient Prediction Result</p>
   <h1>{% if prediction == 1 %}Primary Indication: Heart Disease{% else %}Primary Indication: Healthy{% endif %}</h1>
-  <p class="lede">Clinical evidence synthesized using <strong>{{ model_used|replace('heart_disease_', '')|replace('.joblib', '')|upper }}</strong>.</p>
+  <p class="lede">Clinical evidence synthesized using <strong>{{ model_used }}</strong>.</p>
   <div class="metrics-grid metrics-grid--single">
     <div class="metric-box">
       <p class="metric">{{ "%.1f"|format(probability * 100) }}%</p>
