@@ -20,6 +20,10 @@
   <p><a class="source-link" href="{{ dataset.link }}" target="_blank" rel="noopener">View original source dataset &nearrow;</a></p>
 </div>
 
+<div class="explorer-nav-header">
+  <p class="eyebrow">Explore views</p>
+  <p class="explorer-nav-help">Choose a view to switch between histograms, correlations, and custom plots.</p>
+</div>
 <nav class="explorer-nav" aria-label="Dataset explorer views">
   <a class="{{ 'active' if view == 'distributions' else '' }}" href="{{ url_for('web.view_data', view='distributions', dataset=dataset_key) }}">01 <span>Field distributions</span></a>
   <a class="{{ 'active' if view == 'matrix' else '' }}" href="{{ url_for('web.view_data', view='matrix', dataset=dataset_key) }}">02 <span>Correlation matrix</span></a>

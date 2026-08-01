@@ -38,6 +38,11 @@ FEATURE_FIELDS = [
 ]
 TARGET_FIELD = "target"
 SUPPORTED_METHODS = ("knn", "naive_bayes", "svm")
+METHOD_LABELS = {
+    "knn": "K-Nearest Neighbors",
+    "naive_bayes": "Naive Bayes",
+    "svm": "Support Vector Machine",
+}
 FEATURE_RULES = {
     "age": {"minimum": 0, "maximum": 120},
     "sex": {"allowed": {0, 1}},
@@ -170,6 +175,12 @@ def _build_estimator(method, random_state, n_neighbors):
 # Converts a dataset or output label into a stable filename component.
 def _slug(value):
     return re.sub(r"[^A-Za-z0-9]+", "_", str(value)).strip("_").lower()
+
+
+def _model_display_name(dataset_key, method):
+    dataset_label = str(dataset_key).replace("_", " ").replace("-", " ").title()
+    method_label = METHOD_LABELS.get(method, str(method).replace("_", " ").title())
+    return f"{dataset_label} - {method_label}"
 
 
 # Creates a unique model ID for a training run.
@@ -370,9 +381,11 @@ def train_model(
     save_path = MODEL_PATH.parent / f"heart_disease_{model_id}.joblib"
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(estimator, save_path)
+    display_name = _model_display_name(result["dataset_key"], method)
     result.update({
         "model_id": model_id,
-        "name": model_id,
+        "name": display_name,
+        "display_name": display_name,
         "model_path": _relative_artifact_path(save_path),
         "created_at": datetime.now(timezone.utc).isoformat(),
     })

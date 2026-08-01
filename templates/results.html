@@ -9,12 +9,12 @@
 
 <div class="form-panel">
   <div class="results-filter">
-    <label>Select Dataset and Method
+    <label>Select Model
       <select id="result-select" onchange="filterResults()">
         <option value="all">All Results</option>
         {% for item in summary %}
         <option value="{{ item.model_id }}">
-          {{ item.dataset }} - {{ item.method }}
+          {{ item.model_name }}
         </option>
         {% endfor %}
       </select>

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -99,6 +100,42 @@ FIELD_DEFINITIONS = {
     for item in DATA_DICTIONARY
     if item["field"] != "target"
 }
+
+MODEL_METHOD_LABELS = {
+    "knn": "K-Nearest Neighbors",
+    "naive_bayes": "Naive Bayes",
+    "svm": "Support Vector Machine",
+}
+
+
+def _format_model_timestamp(value):
+    if not value:
+        return ""
+
+    try:
+        timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    timestamp = timestamp.astimezone(timezone.utc)
+    return timestamp.strftime("%b %d, %Y %H:%M UTC").replace(" 0", " ")
+
+
+def _model_display_name(model, datasets):
+    dataset_key = model.get("dataset_key", "")
+    dataset = datasets.get(dataset_key, {})
+    dataset_label = dataset.get("label") or str(dataset_key).replace("_", " ").title()
+    method = str(model.get("method", "")).strip().lower()
+    method_label = MODEL_METHOD_LABELS.get(method, method.replace("_", " ").title())
+    display_name = f"{dataset_label} \u2014 {method_label}"
+    timestamp = _format_model_timestamp(model.get("created_at"))
+    return f"{display_name} ({timestamp})" if timestamp else display_name
+
+
+def _models_for_display(models, datasets):
+    return [{**model, "display_name": _model_display_name(model, datasets)} for model in models]
 
 
 # Validates an upload name and returns a collision-safe path inside the inputs directory.
@@ -300,7 +337,12 @@ def train():
                 result,
                 title=f"{result['method'].replace('_', ' ').title()} Training Metrics",
             )
-            return render_template("train_result.html", result=result, metrics_plot=metrics_plot)
+            return render_template(
+                "train_result.html",
+                result=result,
+                metrics_plot=metrics_plot,
+                model_name=_model_display_name(result, datasets),
+            )
         except (OSError, ValueError, TypeError) as error:
             flash(str(error), "error")
             return render_template("train.html", datasets=datasets)
@@ -311,7 +353,8 @@ def train():
 # Renders the patient prediction form and returns the model output for a single case.
 @web.route("/predict", methods=["GET", "POST"])
 def prediction():
-    available_models = list_registered_models()
+    datasets = get_datasets()
+    available_models = _models_for_display(list_registered_models(), datasets)
     
     if request.method == "GET":
         return render_template("predict.html", fields=FIELD_DEFINITIONS, models=available_models)
@@ -328,11 +371,15 @@ def prediction():
         flash(str(error), "error")
         return redirect(url_for("web.prediction"))
 
+    selected_model = next(
+        (model for model in available_models if model.get("model_id") == model_id),
+        None,
+    )
     return render_template(
         "prediction_result.html",
         prediction=prediction_value,
         probability=probability,
-        model_used=model_id
+        model_used=selected_model["display_name"] if selected_model else "the selected trained model",
     )
 
 
@@ -358,6 +405,7 @@ def view_results():
         if "error" in result:
             summary.append({
                 "model_id": result.get("model_id", "unknown"),
+                "model_name": _model_display_name(result, datasets),
                 "dataset": ds_label,
                 "method": result.get("method", "Unknown").replace("_", " ").title(),
                 "accuracy": "N/A",
@@ -372,6 +420,7 @@ def view_results():
 
         summary.append({
             "model_id": result.get("model_id", "unknown"),
+            "model_name": _model_display_name(result, datasets),
             "dataset": ds_label,
             "method": result["method"].replace("_", " ").title(),
             "accuracy": f"{result['accuracy']:.2%}",
