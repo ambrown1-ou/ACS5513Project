@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heart Disease Model</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% macro render_flash_messages(stack_class='') %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-stack {{ stack_class }}" aria-live="polite">
+        {% for category, message in messages %}
+          {% set flash_category = category if category in ['success', 'error', 'warning', 'info'] else 'info' %}
+          {% set flash_title = {'success': 'Success', 'error': 'Action needed', 'warning': 'Warning', 'info': 'Information'}[flash_category] %}
+          {% set flash_symbol = {'success': '&#10003;', 'error': '!', 'warning': '!', 'info': 'i'}[flash_category] %}
+          <div class="flash {{ flash_category }}" role="{{ 'alert' if flash_category in ['error', 'warning'] else 'status' }}">
+            <span class="flash-mark" aria-hidden="true">{{ flash_symbol|safe }}</span>
+            <div class="flash-body">
+              <strong class="flash-title">{{ flash_title }}</strong>
+              <p>{{ message }}</p>
+            </div>
+            <button class="flash-dismiss" type="button" data-dismiss-flash aria-label="Dismiss message">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+  {% endmacro %}
+
+  <header class="topbar">
+    <a href="{{ url_for('web.index') }}">OU ACS-5513: Machine Learning Project</a>
+    <nav class="topnav">
+      <a href="{{ url_for('web.add_data') }}">Add Data</a>
+      <a href="{{ url_for('web.view_data') }}">Explore Data</a>
+      <a href="{{ url_for('web.train') }}">Train</a>
+      <a href="{{ url_for('web.view_results') }}">Results</a>
+      <a href="{{ url_for('web.prediction') }}">Predict</a>
+    </nav>
+  </header>
+  <main class="shell">
+    {% if not embed_flashes %}{{ render_flash_messages('flash-stack--global') }}{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    document.addEventListener('click', (event) => {
+      const dismissButton = event.target.closest('[data-dismiss-flash]');
+      if (!dismissButton) return;
+      const flash = dismissButton.closest('.flash');
+      if (flash) flash.remove();
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

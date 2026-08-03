@@ -1,13 +1,11 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+from config import paths as project_paths
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-PLOTS_DIR = PROJECT_ROOT / 'static' / 'plots'
+PLOTS_DIR = project_paths.GRAPHICS_DIR
 PLOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -113,7 +111,3 @@ class Dataset:
             plt.savefig(output_path)
             plt.close()
             print(f"Correlation matrix saved to {output_path}")
-            plt.figure(figsize=(12, 10))
-            plt.title(f'Correlation Matrix for {self.long_name}')
-            plt.savefig(PROJECT_ROOT / 'outputs' / f'{self.short_name}_correlation_matrix.png')
-            plt.show()

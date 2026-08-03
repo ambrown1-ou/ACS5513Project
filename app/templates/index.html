@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
+{% endblock %}
+{% block content %}
+<section class="hero hero-panel" data-reveal>
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <h1>Heart Disease Classification Analysis</h1>
+    <p class="hero-subheading">ACS 5513: Applied Machine Learning | University of Oklahoma | Applied Computing M.S.</p>
+    <p class="lede">This project evaluates how supervised machine learning can classify heart-disease outcomes from patient demographics and clinical measurements. Regional datasets from Cleveland, Hungary, Switzerland, and Long Beach are explored and validated through one reproducible workflow so model performance can be compared across sources.</p>
+  </div>
+</section>
+
+<section id="method" class="method-overview" data-reveal>
+  <p class="eyebrow">Method</p>
+  <h2>From clinical data to comparable results</h2>
+  <p>The analysis is organized into two connected stages: approving each dataset as a consistent training input, then evaluating classification models against the same validation measures.</p>
+
+  <div class="method-paragraphs">
+    <p class="method-paragraph" id="data-intake" data-step="01"><strong>Data Intake &amp; Approval.</strong> Datasets can be selected from the bundled regional sources or uploaded as CSV files. Normal uploads are mapped to the bundled schema, checked for missing, invalid, and out-of-range values, and approved with explicit review decisions before they become available for training. Trusted inputs can use the same canonical schema without the review step. Exploratory distributions, correlations, and custom plots provide additional context for each approved dataset.</p>
+    <p class="method-paragraph" id="training" data-step="02"><strong>Training &amp; Evaluation.</strong> Three models are fully implemented for the current analysis: Naive Bayes, K-Nearest Neighbors (KNN), and Support Vector Machine (SVM). Additional models are planned as the project develops. Each training run uses the columns and rows approved during Add Data intake with its configured missing-value strategy, then reports accuracy, precision, recall, and F1 score across stratified validation folds. Saved results can be compared across datasets and model runs before using a selected model for an individual prediction.</p>
+  </div>
+</section>
+
+<section class="choices" data-reveal>
+  <a class="choice" href="{{ url_for('web.add_data') }}" data-reveal-delay="1" data-icon="＋">
+    <h2>Add Data</h2>
+    <p>Upload clinical datasets, map their schema, and approve them for training.</p>
+    <span class="action">Open Intake</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.view_data') }}" data-reveal-delay="2" data-icon="◈">
+    <h2>Exploratory Data Analysis</h2>
+    <p>Analyze feature distributions and multivariate relationships through 3D interactive plotting.</p>
+    <span class="action">View Explorer</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.train') }}" data-reveal-delay="3" data-icon="◆">
+    <h2>Model Training</h2>
+    <p>Configure model parameters and train benchmarking models on approved datasets.</p>
+    <span class="action">View Training</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.view_results') }}" data-reveal-delay="4" data-icon="▦">
+    <h2>Statistical Results</h2>
+    <p>Compare Accuracy, Precision, Recall, and F1 scores across regional data sources.</p>
+    <span class="action">View Results</span>
+  </a>
+  <a class="choice" href="{{ url_for('web.prediction') }}" data-reveal-delay="5" data-icon="◉">
+    <h2>Prediction Test</h2>
+    <p>Enter patient inputs and review the model's prediction for a single case.</p>
+    <span class="action">View Deployment</span>
+  </a>
+  <a class="choice" href="https://github.com/ambrown1-ou/ACS5513Project" target="_blank" rel="noopener" data-reveal-delay="6" data-icon="⌘">
+    <h2>Project Repository</h2>
+    <p>View the source code and project history in GitHub.</p>
+    <span class="action">Open Repository</span>
+  </a>
+</section>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='landing.js') }}"></script>
+{% endblock %}

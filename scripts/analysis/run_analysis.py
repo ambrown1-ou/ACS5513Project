@@ -1,14 +1,17 @@
+import sys
 from pathlib import Path
-
-from dataset_analysis import Dataset
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from dataset_analysis import Dataset
+from config import paths as project_paths
 
 
 # Open the Cleveland heart disease dataset and load it into a Dataset object
 cd = Dataset(
-    data_path=PROJECT_ROOT / 'inputs' / 'heart_disease_cleveland_cleaned.csv',
+    data_path=project_paths.BUNDLED_DATASETS_DIR / 'heart_disease_cleveland_cleaned.csv',
     short_name='cleveland',
     long_name='Cleveland Heart Disease Dataset'
 )

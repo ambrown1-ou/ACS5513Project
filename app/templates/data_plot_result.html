@@ -1,0 +1,26 @@
+{% if plot_image or plot_url %}
+<section class="plot-result" id="plot-result" data-plot-dimensions="{{ dimensions }}">
+  {% if view == 'distributions' %}<h2>Distribution of every field</h2>{% endif %}
+  {% if view == 'matrix' %}<h2>How the fields correlate</h2>{% endif %}
+  {% if view == 'strongest' %}<h2>The strongest 2D relationships</h2>{% endif %}
+  {% if view == 'custom' %}<h2>Custom feature relationship</h2>{% endif %}
+  
+  {% if view == 'distributions' %}
+  <div class="chart-explanation">
+    <p><strong>Clinical Distribution Benchmark</strong></p>
+    <p>Each chart visualizes a single clinical metric across the patient population. Numeric fields use shared bins with side-by-side bars, while coded fields use grouped bars. Bar height represents the number of patients in each value or range, colored by diagnosis: <strong>No Disease (Green)</strong> vs <strong>Heart Disease</strong>.</p>
+    <p>Summary statistics (Average and Median) are provided below each chart to describe the central tendency of the data for each attribute.</p>
+  </div>
+  {% endif %}
+
+  {% if plot_url %}
+    <img src="{{ plot_url }}" alt="{{ view|replace('_', ' ')|title }} visualization of the heart disease dataset">
+  {% elif view == 'custom' %}
+    <div class="plotly-container">
+      {{ plot_image | safe }}
+    </div>
+  {% else %}
+    <img src="data:image/png;base64,{{ plot_image }}" alt="{{ view|replace('_', ' ')|title }} visualization of the heart disease dataset">
+  {% endif %}
+</section>
+{% endif %}

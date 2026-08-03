@@ -6,7 +6,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from model import train_model
+from model import FEATURE_FIELDS, SUPPORTED_METHODS, train_model
+from config import paths as project_paths
 
 
 if __name__ == "__main__":
@@ -14,22 +15,36 @@ if __name__ == "__main__":
     parser.add_argument(
         "data_path",
         nargs="?",
-        default=PROJECT_ROOT / "inputs" / "heart_disease_cleveland_cleaned.csv",
+        default=project_paths.BUNDLED_DATASETS_DIR / "heart_disease_cleveland_cleaned.csv",
         help="CSV file containing the feature columns and target",
     )
     parser.add_argument("--cv-folds", type=int, default=5)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--neighbors", type=int, default=5, help="Number of neighbors for KNN")
-    parser.add_argument("--method", type=str, default="knn", choices=["knn", "naive_bayes", "svm"])
+    parser.add_argument("--method", type=str, default="knn", choices=list(SUPPORTED_METHODS))
+    parser.add_argument(
+        "--feature-fields",
+        type=str,
+        default=",".join(FEATURE_FIELDS),
+        help="Comma-separated canonical feature fields to train on",
+    )
+    parser.add_argument("--missing-strategy", type=str, default="drop", choices=["drop", "impute", "native"])
     args = parser.parse_args()
+
+    kwargs = {}
+    if args.method == "knn":
+        kwargs["n_neighbors"] = args.neighbors
+    feature_fields = [field.strip() for field in args.feature_fields.split(",") if field.strip()]
 
     result = train_model(
         args.data_path,
         method=args.method,
         random_state=args.random_state,
         cv_folds=args.cv_folds,
+        feature_fields=feature_fields,
+        missing_strategy=args.missing_strategy,
         dataset_key=Path(args.data_path).stem,
-        n_neighbors=args.neighbors,
+        **kwargs,
     )
     print(f"Model saved to {result['model_path']}")
     print(f"Method used: {result['method']}")

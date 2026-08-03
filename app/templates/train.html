@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block content %}
+{% macro render_train_flashes() %}
+  {{ render_flash_messages('flash-stack--form') }}
+{% endmacro %}
+
+<a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
+<section class="page-heading page-heading--left">
+  {% if view == 'manage-data' %}
+  <p class="eyebrow">Data Intake</p>
+  <h1>Add Data</h1>
+  <p class="lede">Upload clinical datasets, map their fields, and approve their validation reports before training.</p>
+  {% else %}
+  <p class="eyebrow">Model</p>
+  <h1>Model Training</h1>
+  <p class="lede">Configure benchmarking parameters for clinical classification.</p>
+  {% endif %}
+</section>
+
+<div class="platform-note">
+  <strong>Platform Note:</strong> This demonstration environment uses an ephemeral filesystem. Newly uploaded datasets and trained models will be reset upon session timeout or application restart.
+</div>
+
+<div class="explorer-nav-header explorer-nav-header--stacked">
+  <p class="eyebrow">Model views</p>
+  <p class="explorer-nav-help">Choose between dataset management and model training workflows.</p>
+</div>
+<nav class="explorer-nav" aria-label="Model training views">
+  <a class="{{ 'active' if view == 'manage-data' else '' }}" href="{{ url_for('web.add_data') }}">01 <span>Add Data</span></a>
+  <a class="{{ 'active' if view == 'train-model' else '' }}" href="{{ url_for('web.train', view='train-model') }}">02 <span>Train Model</span></a>
+</nav>
+
+{% if view == 'manage-data' %}
+<section data-intake-app>
+  <h2>Dataset Intake</h2>
+  <p>Upload a clinical dataset, map its fields, and review the validation report before making it available for training.</p>
+  {{ render_train_flashes() }}
+
+  <div class="intake-steps" aria-label="Dataset intake steps">
+    <div class="intake-step is-active" data-intake-step="mapping">
+      <span class="intake-step-number">01</span>
+      <strong>Map fields</strong>
+      <small>Match source columns to the schema.</small>
+    </div>
+    <div class="intake-step" data-intake-step="review">
+      <span class="intake-step-number">02</span>
+      <strong>Review report</strong>
+      <small>Decide how reported issues are handled.</small>
+    </div>
+    <div class="intake-step" data-intake-step="ready">
+      <span class="intake-step-number">03</span>
+      <strong>Make available</strong>
+      <small>Approve the dataset for training.</small>
+    </div>
+  </div>
+
+  <p class="api-status" data-intake-status hidden role="status"></p>
+
+  <form class="form-panel form-panel--spaced" enctype="multipart/form-data" data-intake-upload>
+    <label>CSV Data File
+      <input type="file" name="data_file" accept=".csv,text/csv" required>
+    </label>
+    <label>Dataset Label
+      <input type="text" name="label" placeholder="e.g. Cleveland Heart Data" required>
+    </label>
+    <label>Data Source
+      <input type="text" name="source" placeholder="e.g. UCI Machine Learning Repository">
+    </label>
+    <label>Brief Description
+      <textarea name="description" rows="3" placeholder="Clinical context and regional significance..."></textarea>
+    </label>
+    <div class="form-grid">
+      <label>Schema
+        <select name="schema_id" data-upload-schema required>
+          <option value="" disabled selected>Loading schemas...</option>
+        </select>
+      </label>
+      <fieldset class="intake-mode-fieldset">
+        <legend>Validation mode</legend>
+        <select name="validation_mode" data-upload-modes required>
+          <option value="NORMAL" selected>Test</option>
+          <option value="NO_TEST">No Test</option>
+        </select>
+        <p class="intake-mode-warning" data-validation-mode-warning hidden role="alert"></p>
+      </fieldset>
+    </div>
+    <button type="submit">Upload Dataset <span aria-hidden="true">&#8594;</span></button>
+    <p class="api-status" data-upload-status hidden role="status"></p>
+  </form>
+
+  <section id="field-mapping-stage" class="intake-stage" data-intake-stage="mapping" hidden>
+    <div class="intake-stage-heading">
+      <div>
+        <p class="eyebrow">Step 01</p>
+        <h3>Field mapping</h3>
+        <p class="field-help">Map the columns you want to keep. Leave a schema field unmapped to exclude it from training.</p>
+      </div>
+      <span class="intake-stage-status" data-mapping-status>Awaiting upload</span>
+    </div>
+    <div class="mapping-table" data-mapping-rows>
+      <p class="field-help">Upload a dataset to analyze its columns.</p>
+    </div>
+    <div class="intake-actions">
+      <button type="button" data-apply-mapping disabled>Apply mapping <span aria-hidden="true">&#8594;</span></button>
+      <p class="api-status" data-mapping-status-message hidden role="status"></p>
+    </div>
+  </section>
+
+  <section id="review-stage" class="intake-stage" data-intake-stage="review" hidden>
+    <div class="intake-stage-heading">
+      <div>
+        <p class="eyebrow">Step 02</p>
+        <h3>Validation report</h3>
+        <p class="field-help">Choose how to handle each field's reported issues. Drop affected rows to remove rows missing that field. Remove the entire column from training when needed.</p>
+      </div>
+      <span class="intake-stage-status" data-review-status>Mapping required</span>
+    </div>
+    <div class="validation-report" data-validation-report>
+      <p class="field-help">The mapping report will appear here.</p>
+    </div>
+    <form class="review-form" data-review-form>
+      <button type="submit" data-submit-review>Approve review <span aria-hidden="true">&#8594;</span></button>
+      <p class="api-status" data-review-status-message hidden role="status"></p>
+    </form>
+  </section>
+
+  <section id="ready-stage" class="intake-stage intake-stage--ready" data-intake-stage="ready" hidden>
+    <div class="intake-stage-heading">
+      <div>
+        <p class="eyebrow">Step 03</p>
+        <h3>Dataset available for training</h3>
+        <p class="field-help" data-ready-summary>Complete mapping and review to make a dataset available.</p>
+      </div>
+      <span class="intake-stage-status intake-stage-status--ready" data-ready-status>Not ready</span>
+    </div>
+  </section>
+
+  <div class="dataset-list">
+    <h3>Available Datasets</h3>
+    <div class="table-scroll dataset-table-scroll">
+      <table class="dataset-table">
+        <thead>
+          <tr>
+            <th>Dataset</th>
+            <th>Intake status</th>
+            <th>Training</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody data-dataset-list>
+          <tr><td colspan="4" class="field-help">Loading datasets...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% else %}
+<section>
+  <h2>Train Model</h2>
+  <p>Select an approved dataset and define the learning architecture.</p>
+  {{ render_train_flashes() }}
+  <div class="training-layout">
+    <form class="form-panel form-panel--spaced training-form-panel" method="post" data-api-form="training">
+      <input type="hidden" name="form_id" value="train">
+
+      <label>Select Dataset
+        <select name="dataset" data-training-dataset required>
+          <option value="" disabled selected>Loading datasets...</option>
+        </select>
+      </label>
+
+      <div class="form-grid">
+        <label>Learning method
+          <select name="method" data-training-method required>
+            <option value="" disabled selected>Loading methods...</option>
+          </select>
+        </label>
+        <label>Validation folds
+          <input type="number" name="cv_folds" value="{{ training_form.cv_folds }}" min="2" max="10" step="1" required>
+        </label>
+        <label>Random state
+          <input type="number" name="random_state" value="{{ training_form.random_state }}" min="0" step="1" required>
+        </label>
+      </div>
+
+      <div id="training-parameter-fields" class="form-grid" data-training-parameters hidden>
+      </div>
+
+      <button type="submit">Initialize Training &rarr;</button>
+      <p class="api-status" data-api-status hidden role="status"></p>
+    </form>
+
+    <aside class="training-guide training-guide--sidebar">
+      <p class="eyebrow">Training Input Guide</p>
+      <p class="training-guide-lede">Choose a method to reveal its inputs and parameters.</p>
+
+      <div class="method-guide-top">
+        <div class="training-guide-grid" data-training-guide>
+          <p class="field-help">Loading method parameters...</p>
+        </div>
+      </div>
+
+      <div class="training-guide-general">
+        <h3 class="shared-inputs-title">Shared inputs <span class="shared-inputs-note">· applies to all methods</span></h3>
+        <ul class="training-guide-list training-guide-shared-list">
+          <li><strong>Dataset:</strong> Select a dataset that has completed Add Data intake. Training uses the columns approved during mapping; missing-value handling is applied to the approved rows.</li>
+          <li><strong>Learning method:</strong> Select the algorithm to benchmark. Method-specific parameters appear below when a method is chosen.</li>
+          <li><strong>Validation folds:</strong> Number of cross-validation folds to use for evaluation (integer between 2 and 10). Each target class must have at least as many rows as the selected fold count.</li>
+          <li><strong>Random state:</strong> Integer seed used to make cross-validation splits and any randomized training deterministic for reproducibility.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endif %}
+
+<script type="application/json" id="training-form-state">{{ training_form|tojson }}</script>
+{% if view == 'train-model' %}
+<script src="{{ url_for('static', filename='form_builder.js') }}" defer></script>
+{% endif %}
+{% if view == 'manage-data' %}
+<script src="{{ url_for('static', filename='field_mapper.js') }}" defer></script>
+{% endif %}
+{% endblock %}

@@ -5,34 +5,38 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from model.pipeline import train_model
-INPUTS_DIR = PROJECT_ROOT / 'inputs'
+from model import FEATURE_FIELDS, SUPPORTED_METHODS, train_model
+from config import paths as project_paths
 
 DATASETS = {
-    'heart_disease_cleveland_cleaned': INPUTS_DIR / 'heart_disease_cleveland_cleaned.csv',
+    'heart_disease_cleveland_cleaned': project_paths.BUNDLED_DATASETS_DIR / 'heart_disease_cleveland_cleaned.csv',
 }
 
-METHODS = ['knn', 'naive_bayes', 'svm']
+METHODS = SUPPORTED_METHODS
 
 
 def train_all():
     for ds_name, ds_path in DATASETS.items():
         print(f"Processing dataset: {ds_name}...")
         
-        for method in METHODS:
+        for method in SUPPORTED_METHODS:
             print(f"  Training {method}...")
             try:
+                kwargs = {}
+                if method == "knn":
+                    kwargs["n_neighbors"] = 5
                 result = train_model(
                     ds_path,
                     method=method,
+                    feature_fields=FEATURE_FIELDS,
                     dataset_key=ds_name,
-                    n_neighbors=5 # Default for KNN
+                    **kwargs,
                 )
                 print(f"    Model saved to {result['model_path']}")
             except Exception as e:
                 print(f"    Error training {method} on {ds_name}: {e}")
 
-    print("All models trained and registered in outputs/training_results.json")
+    print(f"All models trained and registered in {project_paths.REGISTRY_PATH}")
 
 
 if __name__ == "__main__":

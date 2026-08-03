@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
+<section class="page-heading">
+  <p class="eyebrow">Data Exploration</p>
+  <h1>Clinical Feature Analysis</h1>
+  <p class="lede">Investigating feature distributions and multivariate relationships within the clinical data.</p>
+  <div class="explorer-nav-header explorer-nav-header--stacked">
+    <p class="eyebrow">Dataset</p>
+    <p class="explorer-nav-help">The bundled clinical benchmark dataset for this project. It contains the cleaned Cleveland cases used for training, evaluation, and exploratory analysis.</p>
+    <form class="dataset-picker" method="get" action="{{ url_for('web.view_data') }}">
+      <input type="hidden" name="view" value="{{ view }}">
+      <input type="hidden" name="missing_strategy" value="{{ missing_strategy }}">
+      <label for="dataset-select" class="visually-hidden">Choose dataset</label>
+      <select id="dataset-select" name="dataset">
+        {% for key, info in datasets.items() %}
+        <option value="{{ key }}" {% if key == dataset_key %}selected{% endif %}>{{ info.label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <nav class="explorer-nav" aria-label="Dataset explorer views">
+    <a class="{{ 'active' if view == 'distributions' else '' }}" href="{{ url_for('web.view_data', view='distributions', dataset=dataset_key, missing_strategy=missing_strategy) }}">01 <span>Field distributions</span></a>
+    <a class="{{ 'active' if view == 'matrix' else '' }}" href="{{ url_for('web.view_data', view='matrix', dataset=dataset_key, missing_strategy=missing_strategy) }}">02 <span>Correlation matrix</span></a>
+    <a class="{{ 'active' if view == 'strongest' else '' }}" href="{{ url_for('web.view_data', view='strongest', dataset=dataset_key, missing_strategy=missing_strategy) }}">03 <span>Strongest pairs</span></a>
+    <a class="{{ 'active' if view == 'custom' else '' }}" href="{{ url_for('web.view_data', view='custom', dataset=dataset_key, missing_strategy=missing_strategy) }}">04 <span>Custom feature plot</span></a>
+  </nav>
+
+  <details class="schema-dictionary" data-schema-dictionary>
+    <summary>
+      <strong>Data Dictionary</strong>
+      <span class="schema-dictionary-meta" data-dictionary-schema>Loading schema...</span>
+    </summary>
+    <p class="api-status" data-dictionary-status role="status">Loading schema fields...</p>
+    <div class="table-scroll dataset-table-scroll">
+      <table class="dataset-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Role</th>
+            <th>Domain</th>
+            <th>Units</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody data-dictionary-rows>
+          <tr><td colspan="5" class="field-help">Loading schema fields...</td></tr>
+        </tbody>
+    </table>
+  </div>
+</details>
+
+{% if view == 'custom' %}
+<form class="form-panel plot-form" data-plot-form="custom-plot" method="post" action="{{ url_for('web.view_data', view='custom', dataset=dataset_key) }}">
+  <input type="hidden" name="dataset" value="{{ dataset_key }}">
+  <input type="hidden" name="missing_strategy" value="{{ missing_strategy }}">
+  <input type="hidden" data-available-fields value='{{ fields|tojson }}'>
+  <div class="plot-form-header">
+    <div>
+      <p class="eyebrow">Custom Plot Builder</p>
+      <p class="plot-form-title">Shape the relationship view</p>
+    </div>
+    <p class="plot-guidance">
+      Choose x and y plus a color field for 2D plots. Choose x, y, z, and a color field for 3D plots. Use a coded or domain field for grouped colors, or a numeric field for a gradient.
+    </p>
+  </div>
+  <p class="plot-mode-summary" data-plot-mode-summary>2D mode uses X, Y, and Color. Switch to 3D to enable Z.</p>
+  <fieldset class="plot-dimension-fieldset">
+    <legend>Plot dimensions</legend>
+    <div class="dimension-toggle">
+      <label class="dimension-chip">
+        <input type="radio" name="dimensions" value="2" {% if dimensions == "2" %}checked{% endif %}>
+        <span>2D plot</span>
+      </label>
+      <label class="dimension-chip">
+        <input type="radio" name="dimensions" value="3" {% if dimensions == "3" %}checked{% endif %}>
+        <span>3D plot</span>
+      </label>
+    </div>
+  </fieldset>
+  <div class="form-grid">
+    {% for axis, label in [('x_field', 'X axis'), ('y_field', 'Y axis'), ('z_field', 'Z axis'), ('color_field', 'Color field')] %}
+    <label class="axis-field {{ 'z-axis-field' if axis == 'z_field' else '' }}"{% if axis == 'z_field' %} id="z-axis-field"{% endif %} {% if axis == 'z_field' and dimensions != '3' %}hidden{% endif %}>{{ label }}
+      <select name="{{ axis }}" data-plot-axis="{{ axis }}" {% if axis != 'z_field' or dimensions == '3' %}required{% endif %}>
+        <option value="">Choose a parameter</option>
+        {% for field in fields %}
+        <option value="{{ field }}" {% if field == selected_fields.get(axis, '') %}selected{% endif %}>{{ field }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endfor %}
+  </div>
+  <button type="submit">Generate plot <span aria-hidden="true">&#8594;</span></button>
+</form>
+<script>
+(function () {
+  const plotForm = document.querySelector('[data-plot-form="custom-plot"]');
+  if (!plotForm) {
+    return;
+  }
+
+  const availableFieldsInput = plotForm.querySelector('[data-available-fields]');
+  const availableFields = availableFieldsInput ? JSON.parse(availableFieldsInput.value) : [];
+  const dimensionRadios = Array.from(plotForm.querySelectorAll('input[name="dimensions"]'));
+  const fieldSelects = new Map(
+    ['x_field', 'y_field', 'z_field', 'color_field']
+      .map((name) => [name, plotForm.querySelector(`select[name="${name}"]`)])
+      .filter(([, select]) => Boolean(select))
+  );
+  const modeSummary = plotForm.querySelector('[data-plot-mode-summary]');
+  const zFieldWrapper = plotForm.querySelector('#z-axis-field');
+  const zFieldSelect = fieldSelects.get('z_field') || null;
+  let syncing = false;
+
+  function selectedDimension() {
+    const checked = plotForm.querySelector('input[name="dimensions"]:checked');
+    return checked ? checked.value : '2';
+  }
+
+  function activeAxisNames(is3D) {
+    return is3D ? ['x_field', 'y_field', 'z_field', 'color_field'] : ['x_field', 'y_field', 'color_field'];
+  }
+
+  function updateModeSummary(is3D) {
+    if (!modeSummary) {
+      return;
+    }
+
+    modeSummary.textContent = is3D
+      ? '3D mode adds Z so you can compare three clinical measures at once.'
+      : '2D mode keeps the view focused on X, Y, and Color.';
+  }
+
+  function syncFieldOptions() {
+    if (syncing) {
+      return;
+    }
+
+    syncing = true;
+    const is3D = selectedDimension() === '3';
+    const activeNames = activeAxisNames(is3D);
+    const activeSelects = activeNames
+      .map((name) => fieldSelects.get(name))
+      .filter(Boolean);
+
+    updateModeSummary(is3D);
+
+    if (zFieldWrapper) {
+      zFieldWrapper.hidden = !is3D;
+    }
+
+    if (zFieldSelect) {
+      zFieldSelect.disabled = !is3D;
+      zFieldSelect.required = is3D;
+      if (!is3D) {
+        zFieldSelect.value = '';
+      }
+    }
+
+    const usedValues = new Set();
+    activeSelects.forEach((select) => {
+      if (select.value && usedValues.has(select.value)) {
+        select.value = '';
+      }
+      if (select.value) {
+        usedValues.add(select.value);
+      }
+    });
+
+    activeSelects.forEach((select) => {
+      const currentValue = select.value;
+      Array.from(select.options).forEach((option) => {
+        if (!option.value) {
+          option.disabled = false;
+          return;
+        }
+        option.disabled = option.value !== currentValue && activeSelects.some((otherSelect) => otherSelect !== select && otherSelect.value === option.value);
+      });
+    });
+
+    syncing = false;
+  }
+
+  dimensionRadios.forEach((radio) => radio.addEventListener('change', syncFieldOptions));
+  fieldSelects.forEach((select) => select.addEventListener('change', syncFieldOptions));
+  syncFieldOptions();
+})();
+</script>
+{% endif %}
+{% include 'data_plot_result.html' %}
+{% if strongest_pairs %}
+<section class="pair-list">
+  <p class="eyebrow">Ranked by normalized mutual information</p>
+  <p>NMI ranges from 0 to 1 and detects general dependence after binning continuous fields, including nonlinear relationships. Continuous pairs use a LOWESS trend; coded fields use boxplots or a count heatmap because their numeric codes are categories, not measurements.</p>
+  {% for pair in strongest_pairs %}<div><strong>{{ pair.first }} + {{ pair.second }}</strong><span>NMI {{ '%.2f'|format(pair.mutual_information) }} · r {{ '%.2f'|format(pair.pearson) }} · rho {{ '%.2f'|format(pair.spearman) }}</span></div>{% endfor %}
+</section>
+{% endif %}
+<script>
+(function () {
+  const PLOT_LOADING_KEY = 'plot_loading';
+
+  function createOverlay(label = 'Generating plot...') {
+    const overlay = document.createElement('div');
+    overlay.className = 'plot-spinner-overlay';
+    overlay.setAttribute('role', 'status');
+    overlay.innerHTML = `<div class="spinner-stack"><div class="plot-spinner" aria-hidden="true"></div><div class="spinner-label">${label}</div></div>`;
+    return overlay;
+  }
+
+  let navigationLoading = false;
+
+  function startNavigation(callback) {
+    if (navigationLoading) {
+      return;
+    }
+
+    navigationLoading = true;
+    const overlay = createOverlay('Loading data...');
+    overlay.dataset.pageLoading = 'true';
+    overlay.classList.add('visible');
+    document.body.appendChild(overlay);
+    document.body.setAttribute('aria-busy', 'true');
+    window.setTimeout(callback, 80);
+  }
+
+  document.querySelectorAll('.explorer-nav a').forEach((link) => {
+    link.addEventListener('click', function (event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      event.preventDefault();
+      startNavigation(() => window.location.assign(link.href));
+    });
+  });
+
+  const datasetPicker = document.querySelector('.dataset-picker');
+  const datasetSelect = datasetPicker ? datasetPicker.querySelector('#dataset-select') : null;
+  if (datasetPicker && datasetSelect) {
+    datasetPicker.addEventListener('submit', function (event) {
+      event.preventDefault();
+      startNavigation(() => HTMLFormElement.prototype.submit.call(datasetPicker));
+    });
+    datasetSelect.addEventListener('change', function () {
+      startNavigation(() => HTMLFormElement.prototype.submit.call(datasetPicker));
+    });
+  }
+
+  // Back-to-controls button
+  const backButton = document.createElement('button');
+  backButton.type = 'button';
+  backButton.className = 'back-to-top';
+  backButton.setAttribute('aria-label', 'Back to plot controls');
+  backButton.innerHTML = 'Back to controls';
+  document.body.appendChild(backButton);
+  backButton.addEventListener('click', function () {
+    const form = document.querySelector('[data-plot-form="custom-plot"]');
+    if (form) {
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const firstControl = form.querySelector('select, input, textarea, button');
+      if (firstControl) firstControl.focus({ preventScroll: true });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    backButton.classList.remove('visible');
+  });
+
+  async function activateEmbeddedScripts(container) {
+    const scripts = Array.from(container.querySelectorAll('script'));
+    for (const source of scripts) {
+      if (source.src) {
+        if (source.src.includes('plotly') && window.Plotly) {
+          source.remove();
+          continue;
+        }
+
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          Array.from(source.attributes).forEach((attribute) => {
+            script.setAttribute(attribute.name, attribute.value);
+          });
+          script.async = false;
+          script.onload = resolve;
+          script.onerror = resolve;
+          document.head.appendChild(script);
+          source.remove();
+        });
+        continue;
+      }
+
+      const script = document.createElement('script');
+      Array.from(source.attributes).forEach((attribute) => {
+        script.setAttribute(attribute.name, attribute.value);
+      });
+      script.textContent = source.textContent;
+      source.replaceWith(script);
+    }
+  }
+
+  function showPlotError(result, message) {
+    result.className = 'plot-result';
+    result.innerHTML = '<h2>Custom feature relationship</h2>';
+    const error = document.createElement('div');
+    error.className = 'flash error';
+    error.textContent = message;
+    result.appendChild(error);
+    onPlotReady();
+  }
+
+  // Keep the loading state anchored to the same element that will contain the result.
+  const plotForm = document.querySelector('[data-plot-form="custom-plot"]');
+  if (plotForm) {
+    plotForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      let result = document.querySelector('#plot-result');
+      if (!result) {
+        result = document.createElement('section');
+        result.id = 'plot-result';
+        result.className = 'plot-result plot-loading-placeholder';
+        result.innerHTML = '<h2>Custom feature relationship</h2>';
+        plotForm.parentNode.insertBefore(result, plotForm.nextSibling);
+      }
+      const selectedDimension = plotForm.querySelector('input[name="dimensions"]:checked');
+      result.dataset.plotDimensions = selectedDimension ? selectedDimension.value : '2';
+      result.classList.add('plot-loading-placeholder');
+      result.classList.toggle('plot-loading-placeholder--3d', result.dataset.plotDimensions === '3');
+
+      if (!result.querySelector('.plot-spinner-overlay')) {
+        const overlay = createOverlay();
+        overlay.classList.add('inline', 'visible');
+        result.appendChild(overlay);
+      }
+
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try { sessionStorage.removeItem(PLOT_LOADING_KEY); } catch (error) {}
+
+      const submitBtn = plotForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+
+      try {
+        const action = new URL(plotForm.action, window.location.href);
+        action.hash = '';
+        const response = await fetch(action.href, {
+          method: 'POST',
+          body: new FormData(plotForm),
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const responseText = await response.text();
+        const responseDocument = new DOMParser().parseFromString(responseText, 'text/html');
+        const nextResult = responseDocument.querySelector('#plot-result');
+        if (!response.ok || !nextResult) {
+          const serverError = responseDocument.querySelector('.flash.error');
+          throw new Error(serverError ? serverError.textContent.trim() : 'The plot could not be generated.');
+        }
+
+        result.className = nextResult.className || 'plot-result';
+        result.classList.add('plot-loading-placeholder');
+        result.dataset.plotDimensions = nextResult.dataset.plotDimensions || result.dataset.plotDimensions;
+        result.classList.toggle('plot-loading-placeholder--3d', result.dataset.plotDimensions === '3');
+        result.innerHTML = nextResult.innerHTML;
+        const overlay = createOverlay();
+        overlay.classList.add('inline', 'visible');
+        result.appendChild(overlay);
+        await activateEmbeddedScripts(result);
+        waitForPlot();
+      } catch (error) {
+        showPlotError(result, error instanceof Error ? error.message : 'The plot could not be generated.');
+      }
+    });
+  }
+
+  // On page load, if a plot is being generated, attach an inline overlay to the real plot container
+  function onPlotReady() {
+    // remove any overlay inside the plot-result or placeholder
+    const section = document.querySelector('.plot-result') || document.querySelector('.plot-placeholder');
+    if (section) {
+      const overlay = section.querySelector('.plot-spinner-overlay');
+      if (overlay) {
+        overlay.classList.remove('visible');
+        overlay.remove();
+      }
+      section.classList.remove('plot-loading-placeholder', 'plot-loading-placeholder--3d');
+    }
+    try { sessionStorage.removeItem(PLOT_LOADING_KEY); } catch (e) {}
+    backButton.classList.add('visible');
+    // re-enable submit button
+    const form = document.querySelector('[data-plot-form="custom-plot"]');
+    if (form) {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  function waitForPlot() {
+    const section = document.querySelector('.plot-result');
+    if (!section) {
+      try { sessionStorage.removeItem(PLOT_LOADING_KEY); } catch (e) {}
+      return;
+    }
+
+    // If session indicates we are awaiting a generated plot, show overlay inline
+    try {
+      if (sessionStorage.getItem(PLOT_LOADING_KEY)) {
+        // ensure the section can host absolute overlay
+        section.style.position = section.style.position || 'relative';
+        if (!section.querySelector('.plot-spinner-overlay')) {
+          const overlay = createOverlay();
+          overlay.classList.add('inline', 'visible');
+          section.appendChild(overlay);
+        }
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+
+    const img = section.querySelector('img');
+    if (img) {
+      if (img.complete) {
+        setTimeout(onPlotReady, 80);
+      } else {
+        img.addEventListener('load', () => setTimeout(onPlotReady, 40));
+        img.addEventListener('error', () => setTimeout(onPlotReady, 40));
+      }
+      return;
+    }
+
+    const startedAt = window.performance.now();
+    let boundPlot = null;
+    let finished = false;
+
+    function finishPlotLoading() {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      window.setTimeout(onPlotReady, 40);
+    }
+
+    function plotHasRendered(gd) {
+      if (!gd.classList.contains('js-plotly-plot')) {
+        return false;
+      }
+      if (section.dataset.plotDimensions === '3') {
+        return Boolean(gd.querySelector('.gl-container'));
+      }
+      return Boolean(gd.querySelector('.main-svg'));
+    }
+
+    function pollForPlot() {
+      if (finished) {
+        return;
+      }
+
+      const gd = section.querySelector('[id^="feature-plot-"]');
+      if (gd && window.Plotly && typeof gd.on === 'function') {
+        if (boundPlot !== gd) {
+          boundPlot = gd;
+          gd.on('plotly_afterplot', finishPlotLoading);
+        }
+        // This covers a plot that finished before the listener was attached.
+        if (plotHasRendered(gd)) {
+          finishPlotLoading();
+          return;
+        }
+      }
+
+      if (window.performance.now() - startedAt >= 30000) {
+        finishPlotLoading();
+        return;
+      }
+      window.setTimeout(pollForPlot, 50);
+    }
+
+    pollForPlot();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForPlot);
+  } else {
+    waitForPlot();
+  }
+}());
+</script>
+<script src="{{ url_for('static', filename='data_dictionary.js') }}" defer></script>
+{% endblock %}

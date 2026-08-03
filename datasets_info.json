@@ -1,8 +1,0 @@
-{
-    "heart_disease_cleveland_cleaned": {
-        "label": "Cleveland Heart Disease Cleaned Dataset",
-        "source": "Cleveland Clinic Foundation (Processed)",
-        "description": "The bundled clinical benchmark dataset for this project. It contains the cleaned Cleveland cases used for training, evaluation, and exploratory analysis.",
-        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease"
-    }
-}

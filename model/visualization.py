@@ -58,6 +58,29 @@ def create_training_metrics_plot(metrics, title=None):
         return _encode_figure(figure)
     finally:
         plt.close(figure)
+
+
+# Builds a horizontal bar chart showing the relative importance of each feature.
+def create_feature_importance_plot(importances, title=None):
+    if not importances:
+        return None
+
+    ordered_items = sorted(importances.items(), key=lambda item: item[1], reverse=True)
+    labels = [str(name).replace("_", " ").title() for name, _ in ordered_items]
+    values = [float(value) * 100 for _, value in ordered_items]
+
+    figure, axis = plt.subplots(figsize=(9, max(4.5, 0.35 * len(labels) + 1.5)))
+    try:
+        bars = axis.barh(labels, values, color="#841617")
+        axis.invert_yaxis()
+        axis.set_xlabel("Relative importance (%)")
+        axis.set_title(title or "Feature Importance")
+        axis.grid(axis="x", alpha=0.2)
+        axis.bar_label(bars, labels=[f"{value:.1f}%" for value in values], padding=3)
+        figure.tight_layout()
+        return _encode_figure(figure)
+    finally:
+        plt.close(figure)
 # Normalizes the selected color field for grouped or continuous Plotly coloring.
 def _prepare_color_data(data, color_field):
     plot_data = data.copy()
@@ -66,6 +89,18 @@ def _prepare_color_data(data, color_field):
         plot_data[color_field] = plot_data[color_field].astype(str)
         return plot_data, True, [str(value) for value in category_order]
     return plot_data, False, None
+
+
+def _prepare_plot_data(data, missing_strategy):
+    if missing_strategy != "impute":
+        return data
+
+    plot_data = data.copy()
+    for field in FEATURE_FIELDS:
+        median = plot_data[field].median()
+        if pd.notna(median):
+            plot_data[field] = plot_data[field].fillna(median)
+    return plot_data
 
 
 def _axis_range(series, padding=0.05):
@@ -403,7 +438,7 @@ def _build_3d_regression_post_script(plot_id, regression_index, x_range, y_range
 
 
 # Builds an interactive Plotly 2D or 3D feature plot with selectable color encoding.
-def create_correlation_plot(data_path, fields, dimensions):
+def create_correlation_plot(data_path, fields, dimensions, missing_strategy="impute"):
     if dimensions not in (2, 3):
         raise ValueError("Choose either a 2D or 3D plot.")
 
@@ -415,7 +450,12 @@ def create_correlation_plot(data_path, fields, dimensions):
     if invalid_fields:
         raise ValueError("Choose parameters from the available feature list.")
 
-    data = load_training_data(data_path)
+    # Load data according to requested missing-data handling so the UI can
+    # toggle between dropping incomplete rows or preserving them for plots.
+    data = _prepare_plot_data(
+        load_training_data(data_path, missing_strategy=missing_strategy),
+        missing_strategy,
+    )
     axis_fields = fields[:dimensions]
     color_field = fields[dimensions]
     x_range = _axis_range(data[axis_fields[0]])
@@ -568,9 +608,16 @@ def create_correlation_plot(data_path, fields, dimensions):
     )
 
 
-def create_distribution_plot(data_path):
-    """Return basic field distributions with summary statistics."""
-    data = load_training_data(data_path)
+def create_distribution_plot(data_path, missing_strategy="impute"):
+    """Return basic field distributions with summary statistics.
+
+    Accepts `missing_strategy` to control whether incomplete rows are dropped
+    or preserved for visualization (e.g. 'drop' or 'impute').
+    """
+    data = _prepare_plot_data(
+        load_training_data(data_path, missing_strategy=missing_strategy),
+        missing_strategy,
+    )
     diagnosis_labels = ["No Disease", "Heart Disease"]
     diagnosis_colors = {
         "No Disease": "#b7d9c8",
@@ -661,9 +708,16 @@ def create_distribution_plot(data_path):
         return _encode_figure(figure)
     finally:
         plt.close(figure)
-def create_correlation_matrix_plot(data_path):
-    """Return a heatmap showing feature-to-feature Pearson correlations."""
-    data = load_training_data(data_path)
+def create_correlation_matrix_plot(data_path, missing_strategy="impute"):
+    """Return a heatmap showing feature-to-feature Pearson correlations.
+
+    The `missing_strategy` argument controls how missing feature values are
+    handled before computing correlations.
+    """
+    data = _prepare_plot_data(
+        load_training_data(data_path, missing_strategy=missing_strategy),
+        missing_strategy,
+    )
     figure, axis = plt.subplots(figsize=(11, 9))
     try:
         correlation = data[FEATURE_FIELDS].corr()
@@ -703,9 +757,16 @@ def _normalized_mutual_information(first, second):
 
 
 # Returns the strongest feature pairs by normalized mutual information.
-def create_strongest_correlations_plot(data_path, pair_count=4):
-    """Return strongest feature pairs using normalized mutual information."""
-    data = load_training_data(data_path)
+def create_strongest_correlations_plot(data_path, pair_count=4, missing_strategy="impute"):
+    """Return strongest feature pairs using normalized mutual information.
+
+    Accepts `missing_strategy` to control handling of missing values for the
+    exploratory computation.
+    """
+    data = _prepare_plot_data(
+        load_training_data(data_path, missing_strategy=missing_strategy),
+        missing_strategy,
+    )
     features = data[FEATURE_FIELDS]
     pearson = features.corr(method="pearson")
     spearman = features.corr(method="spearman")

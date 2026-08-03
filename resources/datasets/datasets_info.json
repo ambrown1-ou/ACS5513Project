@@ -1,0 +1,643 @@
+{
+    "heart_disease_cleveland_cleaned": {
+        "label": "Cleveland Heart Disease Cleaned Dataset",
+        "source": "Cleveland Clinic Foundation (Processed)",
+        "description": "The bundled clinical benchmark dataset for this project. It contains the cleaned Cleveland cases used for training, evaluation, and exploratory analysis.",
+        "link": "https://archive.ics.uci.edu/dataset/45/heart+disease",
+        "schema_id": "cleveland_v1",
+        "schema_version": "1",
+        "intake_status": "legacy",
+        "mapping_status": "bundled_schema"
+    },
+    "heart_disease_long_beach_cleaned": {
+        "label": "Long Beach Data Cleaned",
+        "source": "UCI Machine Learning Repository",
+        "description": "",
+        "link": "#",
+        "schema_id": "cleveland_v1",
+        "schema_version": "1",
+        "validation_mode": "NORMAL",
+        "intake_status": "review",
+        "mapping_status": "mapped",
+        "canonical_path": "storage/datasets/mapped/heart_disease_long_beach_cleaned__mapped.csv",
+        "mapping": {
+            "entries": [
+                {
+                    "source_column": "age",
+                    "schema_field": "age",
+                    "source_unit": "years",
+                    "canonical_unit": "years",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "sex",
+                    "schema_field": "sex",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "cp",
+                    "schema_field": "cp",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "trestbps",
+                    "schema_field": "trestbps",
+                    "source_unit": "mmHg",
+                    "canonical_unit": "mmHg",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "chol",
+                    "schema_field": "chol",
+                    "source_unit": "mg/dL",
+                    "canonical_unit": "mg/dL",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "fbs",
+                    "schema_field": "fbs",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "restecg",
+                    "schema_field": "restecg",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "thalach",
+                    "schema_field": "thalach",
+                    "source_unit": "bpm",
+                    "canonical_unit": "bpm",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "exang",
+                    "schema_field": "exang",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "oldpeak",
+                    "schema_field": "oldpeak",
+                    "source_unit": "mm",
+                    "canonical_unit": "mm",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "slope",
+                    "schema_field": "slope",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "ca",
+                    "schema_field": "ca",
+                    "source_unit": "count",
+                    "canonical_unit": "count",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "thal",
+                    "schema_field": "thal",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "role": "feature"
+                },
+                {
+                    "source_column": "heart_disease_binary",
+                    "schema_field": "target",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "role": "classifier"
+                }
+            ],
+            "mapped_source_columns": [
+                "age",
+                "ca",
+                "chol",
+                "cp",
+                "exang",
+                "fbs",
+                "heart_disease_binary",
+                "oldpeak",
+                "restecg",
+                "sex",
+                "slope",
+                "thal",
+                "thalach",
+                "trestbps"
+            ],
+            "unmapped_source_columns": [
+                "num",
+                "source",
+                "source_row"
+            ],
+            "mapped_schema_fields": [
+                "age",
+                "ca",
+                "chol",
+                "cp",
+                "exang",
+                "fbs",
+                "oldpeak",
+                "restecg",
+                "sex",
+                "slope",
+                "target",
+                "thal",
+                "thalach",
+                "trestbps"
+            ],
+            "unmapped_schema_fields": [],
+            "classifier_mapped": true
+        },
+        "conversion_ids": {},
+        "validation_report": {
+            "total_rows": 200,
+            "rows_with_missing_data": 199,
+            "rows_with_out_of_range_values": 1,
+            "rows_with_conversion_errors": 0,
+            "missing_schema_fields": [],
+            "unmapped_source_columns": [
+                "num",
+                "source",
+                "source_row"
+            ],
+            "fields": [
+                {
+                    "source_column": "age",
+                    "schema_field": "age",
+                    "role": "feature",
+                    "source_unit": "years",
+                    "canonical_unit": "years",
+                    "missing_count": 0,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": []
+                },
+                {
+                    "source_column": "sex",
+                    "schema_field": "sex",
+                    "role": "feature",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "missing_count": 0,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": []
+                },
+                {
+                    "source_column": "cp",
+                    "schema_field": "cp",
+                    "role": "feature",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "missing_count": 0,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": []
+                },
+                {
+                    "source_column": "trestbps",
+                    "schema_field": "trestbps",
+                    "role": "feature",
+                    "source_unit": "mmHg",
+                    "canonical_unit": "mmHg",
+                    "missing_count": 57,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 14,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 24,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 27,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 30,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 31,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "chol",
+                    "schema_field": "chol",
+                    "role": "feature",
+                    "source_unit": "mg/dL",
+                    "canonical_unit": "mg/dL",
+                    "missing_count": 56,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 6,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 8,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 9,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 12,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 13,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "fbs",
+                    "schema_field": "fbs",
+                    "role": "feature",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "missing_count": 7,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 9,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 50,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 57,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 62,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 63,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "restecg",
+                    "schema_field": "restecg",
+                    "role": "feature",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "missing_count": 0,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": []
+                },
+                {
+                    "source_column": "thalach",
+                    "schema_field": "thalach",
+                    "role": "feature",
+                    "source_unit": "bpm",
+                    "canonical_unit": "bpm",
+                    "missing_count": 53,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 14,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 24,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 27,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 30,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 31,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "exang",
+                    "schema_field": "exang",
+                    "role": "feature",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "missing_count": 53,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 14,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 24,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 27,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 30,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 31,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "oldpeak",
+                    "schema_field": "oldpeak",
+                    "role": "feature",
+                    "source_unit": "mm",
+                    "canonical_unit": "mm",
+                    "missing_count": 56,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 1,
+                    "invalid_count": 1,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 14,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 24,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 27,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 30,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 31,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "slope",
+                    "schema_field": "slope",
+                    "role": "feature",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "missing_count": 102,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 2,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 7,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 11,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 14,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 16,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "ca",
+                    "schema_field": "ca",
+                    "role": "feature",
+                    "source_unit": "count",
+                    "canonical_unit": "count",
+                    "missing_count": 198,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 1,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 2,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 3,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 4,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 5,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "thal",
+                    "schema_field": "thal",
+                    "role": "feature",
+                    "source_unit": "coded",
+                    "canonical_unit": "coded",
+                    "missing_count": 166,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": true,
+                    "sample_rows": [
+                        {
+                            "row": 1,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 2,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 3,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 4,
+                            "issue": "missing",
+                            "value": null
+                        },
+                        {
+                            "row": 5,
+                            "issue": "missing",
+                            "value": null
+                        }
+                    ]
+                },
+                {
+                    "source_column": "heart_disease_binary",
+                    "schema_field": "target",
+                    "role": "classifier",
+                    "source_unit": "binary",
+                    "canonical_unit": "binary",
+                    "missing_count": 0,
+                    "conversion_error_count": 0,
+                    "out_of_range_count": 0,
+                    "invalid_count": 0,
+                    "impute_possible": false,
+                    "sample_rows": []
+                }
+            ],
+            "classifier": {
+                "source_column": "heart_disease_binary",
+                "schema_field": "target",
+                "role": "classifier",
+                "source_unit": "binary",
+                "canonical_unit": "binary",
+                "missing_count": 0,
+                "conversion_error_count": 0,
+                "out_of_range_count": 0,
+                "invalid_count": 0,
+                "impute_possible": false,
+                "sample_rows": []
+            },
+            "sample_rows": [
+                {
+                    "row": 14,
+                    "issue": "missing",
+                    "value": null,
+                    "schema_field": "trestbps"
+                },
+                {
+                    "row": 24,
+                    "issue": "missing",
+                    "value": null,
+                    "schema_field": "trestbps"
+                },
+                {
+                    "row": 27,
+                    "issue": "missing",
+                    "value": null,
+                    "schema_field": "trestbps"
+                },
+                {
+                    "row": 30,
+                    "issue": "missing",
+                    "value": null,
+                    "schema_field": "trestbps"
+                },
+                {
+                    "row": 31,
+                    "issue": "missing",
+                    "value": null,
+                    "schema_field": "trestbps"
+                }
+            ]
+        },
+        "review_decisions": {},
+        "mapped_path": "storage/datasets/mapped/heart_disease_long_beach_cleaned__mapped.csv"
+    }
+}

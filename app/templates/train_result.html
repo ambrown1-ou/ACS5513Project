@@ -31,7 +31,36 @@
         >
     </div>
     {% endif %}
+    {% if feature_importance_plot %}
+    <div class="chart-frame">
+        <h2>Feature Importance</h2>
+        <img
+            src="data:image/png;base64,{{ feature_importance_plot }}"
+            alt="Bar chart showing the trained model's feature importance scores"
+        >
+    </div>
+    {% endif %}
     <p>{{ result.rows }} complete rows were used. Metrics are means across {{ result.cv_folds }} stratified validation folds; the saved model was then fit on all complete rows.</p>
+
+    <div class="results-table-shell">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th scope="col">Parameter</th>
+                    <th scope="col">Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, value in result.items()|sort %}
+                <tr>
+                    <td><code>{{ key }}</code></td>
+                    <td>{{ value if value is not none else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
     <a class="button-link" href="{{ url_for('web.prediction') }}">Run a prediction <span aria-hidden="true">&#8594;</span></a>
 </section>
 {% endblock %}
