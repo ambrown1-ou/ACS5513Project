@@ -5,4 +5,10 @@ venv/
 .ipynb_checkpoints/
 *.log
 .vscode/
-storage/
+storage/*
+!storage/models/
+storage/models/*
+!storage/models/*.joblib
+!storage/registry/
+storage/registry/*
+!storage/registry/training_results.json

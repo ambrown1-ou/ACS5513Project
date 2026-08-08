@@ -25,6 +25,7 @@
     option.value = value;
     option.textContent = label;
     option.disabled = Boolean(disabled);
+    option.selected = Boolean(disabled);
     select.appendChild(option);
     return option;
   };
@@ -191,13 +192,56 @@
     }
   };
 
+  const PREDICTION_GROUPS = [
+    {
+      label: 'Patient profile',
+      description: 'Baseline demographics and presenting symptom.',
+      fields: ['age', 'sex', 'cp'],
+    },
+    {
+      label: 'Resting measures',
+      description: 'Measurements recorded before exercise testing.',
+      fields: ['trestbps', 'chol', 'fbs', 'restecg'],
+    },
+    {
+      label: 'Exercise and vessel signals',
+      description: 'Response to exertion and coded cardiac findings.',
+      fields: ['thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal'],
+    },
+  ];
+
   const createPredictionField = (field, definition) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'prediction-field';
+    wrapper.dataset.field = field;
+
     const label = document.createElement('label');
-    label.textContent = definition.label || field;
+    label.className = 'prediction-field-label';
+    const controlId = `prediction-field-${field}`;
+    label.htmlFor = controlId;
+
+    const labelText = document.createElement('span');
+    labelText.className = 'prediction-field-name';
+    labelText.textContent = definition.label || field;
+    const fieldCode = document.createElement('span');
+    fieldCode.className = 'prediction-field-code';
+    fieldCode.textContent = field;
+    fieldCode.title = `Schema field: ${field}`;
+    fieldCode.setAttribute('aria-label', `Short name: ${field}`);
+    labelText.appendChild(fieldCode);
+    label.appendChild(labelText);
+
+    if (definition.units) {
+      const units = document.createElement('span');
+      units.className = 'prediction-field-units';
+      units.textContent = definition.units;
+      label.appendChild(units);
+    }
 
     let control;
     if (definition.type === 'select' || definition.options) {
       control = document.createElement('select');
+      control.dataset.domainSelect = 'true';
       addOption(control, '', 'Choose a value', true);
       (definition.options || []).forEach((option) => {
         addOption(control, String(option.value), option.label);
@@ -208,25 +252,54 @@
       if (definition.minimum !== undefined) control.min = definition.minimum;
       if (definition.maximum !== undefined) control.max = definition.maximum;
       if (definition.step !== undefined) control.step = definition.step;
+      control.inputMode = definition.step && String(definition.step).includes('.') ? 'decimal' : 'numeric';
     }
 
+    control.id = controlId;
     control.name = field;
     control.required = definition.required !== false;
+    control.autocomplete = 'off';
     label.appendChild(control);
+    wrapper.appendChild(label);
 
     const hint = document.createElement('span');
-    hint.className = 'hint';
-    hint.textContent = `${definition.description || ''}${definition.domain ? ` Domain: ${definition.domain}` : ''}`;
-    label.appendChild(hint);
-    return label;
+    hint.className = 'hint prediction-field-hint';
+    hint.textContent = definition.description || '';
+    wrapper.appendChild(hint);
+    return wrapper;
+  };
+
+  const createPredictionGroup = (group, fields, fieldDefinitions) => {
+    const fieldset = document.createElement('fieldset');
+    fieldset.className = 'prediction-group';
+
+    const legend = document.createElement('legend');
+    legend.textContent = group.label;
+    fieldset.appendChild(legend);
+
+    const description = document.createElement('p');
+    description.className = 'prediction-group-description';
+    description.textContent = group.description;
+    fieldset.appendChild(description);
+
+    const grid = document.createElement('div');
+    grid.className = 'prediction-field-grid';
+    fields.forEach((field) => {
+      if (fieldDefinitions[field]) grid.appendChild(createPredictionField(field, fieldDefinitions[field]));
+    });
+    fieldset.appendChild(grid);
+    return fieldset;
   };
 
   const renderPredictionResult = (container, result) => {
     container.replaceChildren();
+    container.className = `api-result ${Number(result.prediction) === 1 ? 'is-warning' : 'is-success'}`;
     const title = document.createElement('strong');
-    title.textContent = `Prediction: ${result.prediction}`;
+    title.className = 'api-result-title';
+    title.textContent = Number(result.prediction) === 1 ? 'Heart disease indication' : 'No heart disease indication';
     const probability = document.createElement('span');
-    probability.textContent = ` Probability: ${result.probability}`;
+    probability.className = 'api-result-probability';
+    probability.textContent = `${(Number(result.probability) * 100).toFixed(1)}% model probability`;
     container.append(title, probability);
     container.hidden = false;
   };
@@ -239,8 +312,10 @@
     const fieldsContainer = form.querySelector('[data-prediction-fields]');
     const status = form.querySelector('[data-api-status]');
     const resultContainer = form.querySelector('[data-prediction-result]');
+    const fieldCount = form.querySelector('[data-prediction-field-count]');
     let models = [];
     let fieldDefinitions = {};
+    const predictionValues = new Map();
 
     try {
       [models, fieldDefinitions] = await Promise.all([
@@ -256,15 +331,43 @@
       modelSelect.disabled = models.length === 0;
       form.querySelector('button[type="submit"]').disabled = models.length === 0;
 
+      const rememberPredictionValues = () => {
+        fieldsContainer.querySelectorAll('[name]').forEach((control) => {
+          predictionValues.set(control.name, control.value);
+        });
+      };
+
+      const restorePredictionValues = () => {
+        fieldsContainer.querySelectorAll('[name]').forEach((control) => {
+          if (predictionValues.has(control.name)) {
+            control.value = predictionValues.get(control.name);
+          }
+        });
+      };
+
       const renderSelectedModelFields = () => {
+        rememberPredictionValues();
         fieldsContainer.replaceChildren();
         const selectedModel = models.find((model) => model.model_id === modelSelect.value);
         const fields = selectedModel && Array.isArray(selectedModel.feature_fields) && selectedModel.feature_fields.length
           ? selectedModel.feature_fields
           : Object.keys(fieldDefinitions);
-        fields.forEach((field) => {
-          if (fieldDefinitions[field]) fieldsContainer.appendChild(createPredictionField(field, fieldDefinitions[field]));
+        const renderedFields = new Set();
+        PREDICTION_GROUPS.forEach((group) => {
+          const groupFields = group.fields.filter((field) => fields.includes(field));
+          if (!groupFields.length) return;
+          fieldsContainer.appendChild(createPredictionGroup(group, groupFields, fieldDefinitions));
+          groupFields.forEach((field) => renderedFields.add(field));
         });
+        fields.filter((field) => !renderedFields.has(field) && fieldDefinitions[field]).forEach((field) => {
+          fieldsContainer.appendChild(createPredictionGroup(
+            { label: 'Additional inputs', description: 'Fields supplied by the selected model.' },
+            [field],
+            fieldDefinitions,
+          ));
+        });
+        restorePredictionValues();
+        if (fieldCount) fieldCount.textContent = `${renderedFields.size} schema fields`;
       };
 
       modelSelect.addEventListener('change', renderSelectedModelFields);

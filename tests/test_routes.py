@@ -172,7 +172,8 @@ class RouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('data-training-dataset', html)
+        self.assertIn('class="benchmark-workspace"', html)
+        self.assertIn('name="form_id" value="train_all"', html)
         self.assertIn('id="training-form-state"', html)
         self.assertIn("heart_disease_cleveland_cleaned", html)
 
@@ -307,15 +308,13 @@ class RouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('id="training-parameter-fields"', html)
-        self.assertIn('data-api-form="training"', html)
-        self.assertIn('form_builder.js', html)
-        self.assertNotIn('data-parameter-for-method=', html)
-        self.assertNotIn('name="n_neighbors"', html)
+        self.assertIn('class="benchmark-workspace"', html)
+        self.assertIn('name="form_id" value="train_all"', html)
+        self.assertIn('Three models. One clinical baseline.', html)
+        self.assertNotIn('data-api-form="training"', html)
 
         methods = app.test_client().get("/api/metadata/methods").get_json()
-        knn = next(method for method in methods if method["value"] == "knn")
-        self.assertEqual(knn["params"][0]["name"], "n_neighbors")
+        self.assertEqual([method["value"] for method in methods], ["naive_bayes", "knn", "svm"])
 
     def test_training_form_includes_added_method_options(self):
         response = app.test_client().get("/train?view=train-model")
@@ -323,13 +322,11 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         methods = app.test_client().get("/api/metadata/methods").get_json()
-        random_forest = next(method for method in methods if method["value"] == "random_forest")
-        self.assertIn("n_estimators", [parameter["name"] for parameter in random_forest["params"]])
+        self.assertEqual({method["value"] for method in methods}, {"naive_bayes", "knn", "svm"})
         self.assertNotIn('value="random_forest"', html)
-        self.assertNotIn('name="n_estimators"', html)
         self.assertNotIn('name="feature_set"', html)
         self.assertNotIn('name="missing_strategy"', html)
-        self.assertIn('data-training-guide', html)
+        self.assertIn('13 features', html)
 
     def test_prediction_form_uses_api_metadata_shell(self):
         response = app.test_client().get("/predict")

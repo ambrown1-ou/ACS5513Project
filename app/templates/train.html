@@ -18,7 +18,7 @@
 </section>
 
 <div class="platform-note">
-  <strong>Platform Note:</strong> This demonstration environment uses an ephemeral filesystem. Newly uploaded datasets and trained models will be reset upon session timeout or application restart.
+  <strong>Deployment note:</strong> The Cleveland dataset, model artifacts, and registry are bundled with this deployment. Uploaded datasets remain runtime-only.
 </div>
 
 <div class="explorer-nav-header explorer-nav-header--stacked">
@@ -155,69 +155,78 @@
   </div>
 </section>
 {% else %}
-<section>
-  <h2>Train Model</h2>
-  <p>Select an approved dataset and define the learning architecture.</p>
+<section class="benchmark-workspace">
+  <div class="benchmark-intro">
+    <p class="eyebrow">Cleveland Benchmark</p>
+    <h2>Three models. One clinical baseline.</h2>
+    <p class="benchmark-intro-copy">The bundled Cleveland cases are evaluated with the same 13-feature schema, median imputation, and fixed five-fold stratified validation. The saved estimators are fitted on every available row after validation.</p>
+  </div>
   {{ render_train_flashes() }}
-  <div class="training-layout">
-    <form class="form-panel form-panel--spaced training-form-panel" method="post" data-api-form="training">
-      <input type="hidden" name="form_id" value="train">
-
-      <label>Select Dataset
-        <select name="dataset" data-training-dataset required>
-          <option value="" disabled selected>Loading datasets...</option>
-        </select>
-      </label>
-
-      <div class="form-grid">
-        <label>Learning method
-          <select name="method" data-training-method required>
-            <option value="" disabled selected>Loading methods...</option>
-          </select>
-        </label>
-        <label>Validation folds
-          <input type="number" name="cv_folds" value="{{ training_form.cv_folds }}" min="2" max="10" step="1" required>
-        </label>
-        <label>Random state
-          <input type="number" name="random_state" value="{{ training_form.random_state }}" min="0" step="1" required>
-        </label>
-      </div>
-
-      <div id="training-parameter-fields" class="form-grid" data-training-parameters hidden>
-      </div>
-
-      <button type="submit">Initialize Training &rarr;</button>
-      <p class="api-status" data-api-status hidden role="status"></p>
+  <div class="benchmark-toolbar">
+    <div class="benchmark-dataset-mark">
+      <span class="benchmark-dataset-kicker">Active dataset</span>
+      <strong>{{ bundled_dataset.label or 'Cleveland Heart Disease' }}</strong>
+      <span>{{ benchmark_results[0].rows if benchmark_results else '303' }} rows &middot; 13 features &middot; target: binary diagnosis</span>
+    </div>
+    <form method="post" class="benchmark-action-form">
+      <input type="hidden" name="form_id" value="train_all">
+      <button type="submit">Train all three models <span aria-hidden="true">&#8594;</span></button>
     </form>
+  </div>
 
-    <aside class="training-guide training-guide--sidebar">
-      <p class="eyebrow">Training Input Guide</p>
-      <p class="training-guide-lede">Choose a method to reveal its inputs and parameters.</p>
-
-      <div class="method-guide-top">
-        <div class="training-guide-grid" data-training-guide>
-          <p class="field-help">Loading method parameters...</p>
+  {% if benchmark_results %}
+  <section class="benchmark-panel" aria-labelledby="benchmark-results-heading">
+    <div class="benchmark-panel-heading">
+      <div>
+        <p class="eyebrow">Registered results</p>
+        <h3 id="benchmark-results-heading">Validation snapshot</h3>
+      </div>
+      <span class="benchmark-status">{{ benchmark_results|length }} / 3 models ready</span>
+    </div>
+    <div class="benchmark-cards">
+      {% for result in benchmark_results %}
+      <article class="benchmark-card {% if benchmark_leader and result.model_id == benchmark_leader.model_id %}is-leader{% endif %}">
+        <div class="benchmark-card-topline">
+          <span class="benchmark-method-index">0{{ loop.index }}</span>
+          {% if benchmark_leader and result.model_id == benchmark_leader.model_id %}<span class="benchmark-leader">Top F1</span>{% endif %}
         </div>
-      </div>
+        <h4>{{ result.method_label }}</h4>
+        <p class="benchmark-score">{{ "%.1f"|format(result.f1 * 100) }}<span>%</span></p>
+        <p class="benchmark-score-label">mean F1 score <span>&plusmn; {{ "%.1f"|format(result.f1_std * 100) }}%</span></p>
+        <dl class="benchmark-metrics">
+          <div><dt>Accuracy</dt><dd>{{ "%.1f"|format(result.accuracy * 100) }}% <small>&plusmn; {{ "%.1f"|format(result.accuracy_std * 100) }}</small></dd></div>
+          <div><dt>Precision</dt><dd>{{ "%.1f"|format(result.precision * 100) }}% <small>&plusmn; {{ "%.1f"|format(result.precision_std * 100) }}</small></dd></div>
+          <div><dt>Recall</dt><dd>{{ "%.1f"|format(result.recall * 100) }}% <small>&plusmn; {{ "%.1f"|format(result.recall_std * 100) }}</small></dd></div>
+        </dl>
+        <footer class="benchmark-card-footer">
+          <span>{{ result.rows }} rows</span>
+          <span>{{ result.cv_folds }} folds</span>
+          <span class="status-badge is-success">Ready</span>
+        </footer>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="benchmark-footnote">Scores are means across stratified folds. Standard deviations are shown beside each metric; the production artifact uses median imputation inside its pipeline.</p>
+  </section>
+  {% else %}
+  <section class="benchmark-empty" aria-live="polite">
+    <span class="benchmark-empty-mark">01</span>
+    <div>
+      <h3>No bundled benchmark artifacts yet.</h3>
+      <p>Run the benchmark once to register Bayes, KNN, and SVM for the training and prediction workflows.</p>
+    </div>
+  </section>
+  {% endif %}
 
-      <div class="training-guide-general">
-        <h3 class="shared-inputs-title">Shared inputs <span class="shared-inputs-note">· applies to all methods</span></h3>
-        <ul class="training-guide-list training-guide-shared-list">
-          <li><strong>Dataset:</strong> Select a dataset that has completed Add Data intake. Training uses the columns approved during mapping; missing-value handling is applied to the approved rows.</li>
-          <li><strong>Learning method:</strong> Select the algorithm to benchmark. Method-specific parameters appear below when a method is chosen.</li>
-          <li><strong>Validation folds:</strong> Number of cross-validation folds to use for evaluation (integer between 2 and 10). Each target class must have at least as many rows as the selected fold count.</li>
-          <li><strong>Random state:</strong> Integer seed used to make cross-validation splits and any randomized training deterministic for reproducibility.</li>
-        </ul>
-      </div>
-    </aside>
+  <div class="benchmark-method-strip" aria-label="Supported model methods">
+    {% for method in method_catalog %}
+    <span><strong>{{ method.label }}</strong>{% if not loop.last %}<i aria-hidden="true">/</i>{% endif %}</span>
+    {% endfor %}
   </div>
 </section>
 {% endif %}
 
 <script type="application/json" id="training-form-state">{{ training_form|tojson }}</script>
-{% if view == 'train-model' %}
-<script src="{{ url_for('static', filename='form_builder.js') }}" defer></script>
-{% endif %}
 {% if view == 'manage-data' %}
 <script src="{{ url_for('static', filename='field_mapper.js') }}" defer></script>
 {% endif %}

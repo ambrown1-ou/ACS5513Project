@@ -8,11 +8,9 @@ from model import (
     FEATURE_FIELDS,
     METHOD_LABELS,
     extract_feature_importances,
-    list_registered_models,
     load_model,
     load_training_registry,
     missing_strategy_catalog,
-    method_catalog,
     model_exists,
     predict,
 )
@@ -27,7 +25,13 @@ from model.visualization import (
 from config import paths as project_paths
 
 # Import API helper functions
-from .api import get_datasets
+from .api import (
+    BUNDLED_DATASET_KEY,
+    SUPPORTED_APP_METHODS,
+    get_datasets,
+    list_bundled_models,
+    supported_method_catalog,
+)
 
 
 web = Blueprint("web", __name__)
@@ -72,6 +76,24 @@ def _model_display_name(model, datasets):
 def _models_for_display(models, datasets):
     """Format models for display with display names."""
     return [{**model, "display_name": _model_display_name(model, datasets)} for model in models]
+
+
+def _benchmark_results():
+    methods = {
+        method["value"]: method["label"]
+        for method in supported_method_catalog()
+    }
+    results = []
+    for result in list_bundled_models():
+        results.append({
+            **result,
+            "method_label": methods.get(
+                result.get("method"),
+                str(result.get("method", "")).replace("_", " ").title(),
+            ),
+        })
+    leader = max(results, key=lambda result: result.get("f1", 0), default=None)
+    return results, leader
 
 
 def _api_response_status(response):
@@ -235,12 +257,13 @@ def add_data():
 def train():
     """Render training page - handles form submissions by calling API."""
     datasets = get_datasets()
-    methods = method_catalog()
+    methods = supported_method_catalog()
     missing_strategies = missing_strategy_catalog()
 
     def render_train_page(current_view, form_data=None):
         form_data = form_data or {}
         selected_dataset = datasets.get(form_data.get("dataset", ""), {})
+        benchmark_results, benchmark_leader = _benchmark_results()
         preparation = selected_dataset.get("preparation", {})
         strategy_labels = {item["value"]: item["label"] for item in missing_strategies}
         preparation_form = {
@@ -261,6 +284,9 @@ def train():
             preparation_form=preparation_form,
             selected_dataset=selected_dataset,
             preparation_status=preparation_status,
+            bundled_dataset=datasets.get(BUNDLED_DATASET_KEY, {}),
+            benchmark_results=benchmark_results,
+            benchmark_leader=benchmark_leader,
             embed_flashes=True,
         )
 
@@ -305,6 +331,28 @@ def train():
         except Exception as error:
             flash(f"Upload error: {error}", "error")
             return render_train_page("manage-data")
+
+    elif form_id == "train_all":
+        try:
+            from .api import train_all_models_api
+            with current_app.test_request_context(
+                method="POST",
+                json={"dataset": BUNDLED_DATASET_KEY, "random_state": 42},
+                content_type="application/json",
+            ):
+                response = train_all_models_api()
+            if _api_response_status(response) == 201:
+                results = response[0].get_json().get("models", [])
+                flash(
+                    f"Trained {len(results)} bundled Cleveland models with five-fold imputation.",
+                    "success",
+                )
+                return redirect(url_for("web.train"))
+            error_data = response[0].get_json() if isinstance(response, tuple) else {}
+            flash(f"Training failed: {error_data.get('error', 'Unknown error')}", "error")
+        except Exception as error:
+            flash(f"Training error: {error}", "error")
+        return render_train_page("train-model")
 
     elif form_id == "delete":
         dataset_key = request.form.get("dataset", "")
@@ -441,7 +489,7 @@ def prediction():
         return render_template("predict.html")
 
     datasets = get_datasets()
-    available_models = _models_for_display(list_registered_models(), datasets)
+    available_models = _models_for_display(list_bundled_models(), datasets)
 
     try:
         model_id = request.form.get("model_id")
@@ -501,6 +549,8 @@ def view_results():
     summary = []
     available_dataset_keys = set(datasets.keys())
     for result in all_results:
+        if result.get("dataset_key") != BUNDLED_DATASET_KEY or result.get("method") not in SUPPORTED_APP_METHODS:
+            continue
         ds_name = result.get("dataset_key")
         if ds_name not in available_dataset_keys:
             continue

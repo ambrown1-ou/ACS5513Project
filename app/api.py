@@ -47,6 +47,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 INFO_PATH = project_paths.DATASET_METADATA_PATH
 VALIDATION_MODES = {"NORMAL", "NO_TEST"}
 INTAKE_STATUSES = {"mapping", "review", "ready", "trusted", "legacy"}
+BUNDLED_DATASET_KEY = "heart_disease_cleveland_cleaned"
+SUPPORTED_APP_METHODS = ("naive_bayes", "knn", "svm")
 
 
 # ============================================================================
@@ -383,6 +385,34 @@ def _serialize_model(model, datasets):
     if created_at:
         display_name = f"{display_name} ({created_at})"
     return {**model, "display_name": display_name}
+
+
+def supported_method_catalog():
+    """Return only the estimators exposed by the bundled Cleveland workflow."""
+    catalog = {
+        method["value"]: method
+        for method in method_catalog()
+        if method["value"] in SUPPORTED_APP_METHODS
+    }
+    return [catalog[method] for method in SUPPORTED_APP_METHODS if method in catalog]
+
+
+def list_bundled_models():
+    """Return the newest available artifact for each bundled workflow method."""
+    selected = {}
+    for record in list_registered_models():
+        if record.get("dataset_key") != BUNDLED_DATASET_KEY:
+            continue
+        method = str(record.get("method", "")).strip().lower()
+        if method not in SUPPORTED_APP_METHODS or method in selected:
+            continue
+        selected[method] = record
+
+    method_order = {method: index for index, method in enumerate(SUPPORTED_APP_METHODS)}
+    return sorted(
+        selected.values(),
+        key=lambda record: method_order.get(record.get("method"), len(method_order)),
+    )
 
 
 # ============================================================================
@@ -1026,91 +1056,82 @@ def api_inspect():
 
 @api.get("/models")
 def list_models():
-    """
-    List all trained models.
-
-    Returns:
-        - 200: Array of model records with metadata
-    """
+    """List the available bundled Cleveland model artifacts."""
     try:
-        models = list_registered_models()
         datasets = get_datasets()
-        return jsonify([_serialize_model(model, datasets) for model in models])
+        return jsonify([_serialize_model(model, datasets) for model in list_bundled_models()])
     except Exception as error:
         return jsonify({"error": str(error)}), 500
 
 
-@api.post("/models/train")
-def train_model_api():
-    """
-    Train a new model.
+def _normalize_requested_method(value):
+    method = str(value or "knn").strip().lower()
+    return "naive_bayes" if method == "bayes" else method
 
-    Parameters (JSON):
-        - dataset (required): Dataset key to train on
-        - method (required): Training method (e.g., 'knn', 'logistic_regression')
-        - missing_strategy (required): Missing value strategy
-        - cv_folds (optional, default=5): Cross-validation folds
-        - random_state (optional, default=42): Random seed
-        - Additional method-specific parameters
 
-    Returns:
-        - 201: Training result with metrics and model ID
-        - 400: Invalid parameters or training failed
-    """
-    payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
-        return jsonify({"error": "Request body must be a JSON object."}), 400
+def _train_model_from_payload(payload, bundled_only=False, include_visualizations=True):
+    dataset_key = payload.get("dataset") or BUNDLED_DATASET_KEY
+    if bundled_only and dataset_key != BUNDLED_DATASET_KEY:
+        raise ValueError("The application training workflow uses the bundled Cleveland dataset.")
 
-    try:
-        dataset_key = payload.get("dataset")
-        if not dataset_key:
-            raise ValueError("Missing 'dataset' parameter.")
+    datasets = get_datasets()
+    dataset = datasets.get(dataset_key)
+    if not dataset:
+        raise ValueError(f"Dataset '{dataset_key}' not found.")
+    if not dataset.get("training_available"):
+        raise ValueError("Complete field mapping and review before training.")
 
-        datasets = get_datasets()
-        dataset = datasets.get(dataset_key)
-        if not dataset:
-            raise ValueError(f"Dataset '{dataset_key}' not found.")
+    is_bundled = dataset_key == BUNDLED_DATASET_KEY
+    method = _normalize_requested_method(payload.get("method", "knn"))
+    if is_bundled and method not in SUPPORTED_APP_METHODS:
+        raise ValueError("Choose Bayes, KNN, or SVM for the bundled Cleveland workflow.")
 
-        if not dataset.get("training_available"):
-            raise ValueError("Complete field mapping and review before training.")
-
-        method = payload.get("method", "knn")
+    if is_bundled:
+        cv_folds = 5
+        random_state = int(payload.get("random_state", 42))
+        feature_fields = list(FEATURE_FIELDS)
+        missing_strategy = "impute"
+    else:
         cv_folds = int(payload.get("cv_folds", 5))
         random_state = int(payload.get("random_state", 42))
         feature_fields = _dataset_feature_fields(dataset)
         missing_strategy = payload.get("missing_strategy") or "impute"
-        dataset_path = _dataset_training_path(dataset)
-        if dataset_path is None:
-            raise ValueError("The approved dataset is not available for training.")
 
-        # Extract method-specific parameters
-        kwargs = {}
-        methods = method_catalog()
-        selected_method = next((m for m in methods if m["value"] == method), None)
-        if selected_method:
-            for parameter in selected_method.get("params", []):
-                if parameter["name"] in payload:
-                    kwargs[parameter["name"]] = payload[parameter["name"]]
+    dataset_path = _dataset_training_path(dataset)
+    if dataset_path is None:
+        raise ValueError("The approved dataset is not available for training.")
 
-        result = train_model(
-            dataset_path,
-            method=method,
-            random_state=random_state,
-            cv_folds=cv_folds,
-            feature_fields=feature_fields,
-            missing_strategy=missing_strategy,
-            dataset_key=dataset_key,
-            **kwargs,
-        )
-        result.update({
-            "dataset_selected_columns": list(dataset.get("selected_columns") or feature_fields),
-            "dataset_source_row_ids": list(dataset.get("source_row_ids") or []),
-            "dataset_accepted_row_ids": list(dataset.get("accepted_row_ids") or []),
-        })
+    kwargs = {}
+    selected_method = next(
+        (item for item in method_catalog() if item["value"] == method),
+        None,
+    )
+    if selected_method:
+        for parameter in selected_method.get("params", []):
+            if parameter["name"] in payload:
+                kwargs[parameter["name"]] = payload[parameter["name"]]
+    if is_bundled and method == "knn":
+        kwargs["n_neighbors"] = 5
 
-        # Create visualizations
-        metrics_plot = None
-        feature_importance_plot = None
+    result = train_model(
+        dataset_path,
+        method=method,
+        random_state=random_state,
+        cv_folds=cv_folds,
+        feature_fields=feature_fields,
+        missing_strategy=missing_strategy,
+        dataset_key=dataset_key,
+        **kwargs,
+    )
+    result.update({
+        "dataset_selected_columns": list(dataset.get("selected_columns") or feature_fields),
+        "dataset_source_row_ids": list(dataset.get("source_row_ids") or []),
+        "dataset_accepted_row_ids": list(dataset.get("accepted_row_ids") or []),
+    })
+
+    metrics_plot = None
+    feature_importance_plot = None
+    if include_visualizations:
         try:
             from model.visualization import create_training_metrics_plot
             metrics_plot = create_training_metrics_plot(
@@ -1135,10 +1156,57 @@ def train_model_api():
         except Exception:
             pass
 
+    return result, metrics_plot, feature_importance_plot
+
+
+@api.post("/models/train")
+def train_model_api():
+    """Train one model, using the fixed bundled configuration for Cleveland."""
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Request body must be a JSON object."}), 400
+
+    try:
+        result, metrics_plot, feature_importance_plot = _train_model_from_payload(payload)
         return jsonify({
             **result,
             "metrics_plot": metrics_plot,
             "feature_importance_plot": feature_importance_plot,
+        }), 201
+    except (ValueError, TypeError) as error:
+        return jsonify({"error": str(error)}), 400
+    except (FileNotFoundError, OSError) as error:
+        return jsonify({"error": str(error)}), 503
+    except Exception as error:
+        return jsonify({"error": f"Training failed: {error}"}), 500
+
+
+@api.post("/models/train-all")
+def train_all_models_api():
+    """Train and register Bayes, KNN, and SVM on the bundled Cleveland data."""
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Request body must be a JSON object."}), 400
+
+    try:
+        base_payload = {
+            "dataset": payload.get("dataset", BUNDLED_DATASET_KEY),
+            "random_state": payload.get("random_state", 42),
+        }
+        results = []
+        for method in SUPPORTED_APP_METHODS:
+            result, _, _ = _train_model_from_payload(
+                {**base_payload, "method": method},
+                bundled_only=True,
+                include_visualizations=False,
+            )
+            results.append(result)
+        return jsonify({
+            "dataset_key": BUNDLED_DATASET_KEY,
+            "feature_fields": list(FEATURE_FIELDS),
+            "missing_strategy": "impute",
+            "cv_folds": 5,
+            "models": results,
         }), 201
     except (ValueError, TypeError) as error:
         return jsonify({"error": str(error)}), 400
@@ -1199,7 +1267,7 @@ def api_predict():
     try:
         model_id = payload.get("model_id")
         selected_fields = FEATURE_FIELDS
-        registered_models = list_registered_models()
+        registered_models = list_bundled_models()
         if model_id:
             selected_model = next(
                 (record for record in registered_models if record.get("model_id") == model_id),
@@ -1360,7 +1428,7 @@ def get_methods():
     Returns:
         - 200: Array of method objects with parameters
     """
-    return jsonify(method_catalog())
+    return jsonify(supported_method_catalog())
 
 
 @api.get("/metadata/missing-strategies")

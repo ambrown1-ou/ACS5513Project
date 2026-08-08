@@ -208,20 +208,25 @@ class PipelineTests(unittest.TestCase):
             finally:
                 artifact.unlink(missing_ok=True)
 
-    def test_train_model_rejects_missing_values_for_knn(self):
+    def test_train_model_imputes_missing_values_for_knn(self):
         with TemporaryDirectory() as directory:
             data_path = self.write_strategy_collapse_dataset(directory)
 
-            for missing_strategy in ("impute", "drop"):
-                with self.subTest(missing_strategy=missing_strategy):
-                    with self.assertRaisesRegex(ValueError, "KNN cannot train with missing feature values"):
-                        train_model(
-                            data_path,
-                            method="knn",
-                            cv_folds=2,
-                            missing_strategy=missing_strategy,
-                            register=False,
-                        )
+            result = train_model(
+                data_path,
+                method="knn",
+                cv_folds=2,
+                missing_strategy="impute",
+                n_neighbors=1,
+                register=False,
+            )
+            artifact = PROJECT_ROOT / result["model_path"]
+            try:
+                self.assertEqual(result["missing_strategy"], "impute")
+                self.assertEqual(result["rows"], 4)
+                self.assertTrue(artifact.exists())
+            finally:
+                artifact.unlink(missing_ok=True)
 
     def test_strategy_diagnostics_prevent_single_class_drop_training(self):
         with TemporaryDirectory() as directory:

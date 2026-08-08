@@ -18,8 +18,8 @@ The application uses the same schema and validation rules for its browser forms,
 - Explore feature distributions, correlations, and custom plots for the Cleveland dataset.
 - Inspect the canonical schema and data dictionary.
 - Map any desired canonical columns during dataset intake, exclude unmapped schema fields, and approve field-level validation actions before training.
-- Train KNN, Naive Bayes, SVM, Decision Tree, Random Forest, Histogram Gradient Boosting, or Soft Voting models.
-- Compare accuracy, precision, recall, and F1 score across stratified validation folds.
+- Train the bundled Cleveland benchmark with Bayes, KNN, and SVM.
+- Compare accuracy, precision, recall, and F1 score across fixed five-fold stratified validation.
 - Review feature importance when the selected estimator provides it.
 - Use a trained model for an individual patient prediction.
 
@@ -87,6 +87,7 @@ The tree below lists source and project files. Local secrets, caches, and genera
 |-- scripts/
 |   |-- analysis/
 |   |   |-- dataset_analysis.py
+|   |   |-- model_comparison.py
 |   |   `-- run_analysis.py
 |   `-- training/
 |       |-- train_all.py
@@ -110,7 +111,7 @@ The tree below lists source and project files. Local secrets, caches, and genera
     `-- test_schema_mapping.py
 ```
 
-`storage/` is created and populated at runtime. The bundled CSV and its default metadata remain read-only under `resources/datasets/`; runtime metadata is written to `storage/config/datasets_info.json`.
+`storage/` contains runtime uploads as well as the deployment model bundle. The Cleveland CSV and its default metadata remain read-only under `resources/datasets/`; the generated `storage/models/*.joblib` files and `storage/registry/training_results.json` are kept visible to version control for inclusion with the deployment.
 
 ## Local Setup
 
@@ -161,13 +162,13 @@ python -m pytest -q
 
 ### Run the Cleveland Training Scripts
 
-Train one model:
+Train one bundled model:
 
 ```text
-python scripts/training/train_model.py resources/datasets/heart_disease_cleveland_cleaned.csv --method knn
+python scripts/training/train_model.py resources/datasets/heart_disease_cleveland_cleaned.csv --method knn --missing-strategy impute
 ```
 
-Train every supported method:
+Train the three deployment models:
 
 ```text
 python scripts/training/train_all.py
@@ -178,6 +179,14 @@ Run the bundled analysis script:
 ```text
 python scripts/analysis/run_analysis.py
 ```
+
+Compare KNN, Naive Bayes, and SVM with stratified cross-validation:
+
+```text
+python scripts/analysis/model_comparison.py
+```
+
+The comparison script evaluates the models with fixed 5-fold stratified validation. It saves comparison plots and data under `storage/graphics/`.
 
 ## Cleveland Data Dictionary
 
@@ -206,25 +215,17 @@ The model uses the 13 feature fields from `age` through `thal`; `target` is the 
 
 Add Data accepts an explicit mapping from source columns to canonical schema fields. Map one `target` classifier field and at least one feature field; any schema field left unmapped is excluded from training. The dataset stores the ordered `selected_columns`, `feature_fields`, and `target_field` used by preparation and training. Later preparation and training requests use those stored fields rather than accepting a different selection.
 
-### Missing-Value Strategies
+### Bundled Training Contract
 
-- `drop`: remove rows with missing feature values.
-- `impute`: use median imputation inside the training pipeline for methods that allow it.
-- `native`: keep missing values for estimators that support NaN values.
-
-KNN requires complete feature values. Training with KNN rejects missing feature values instead of dropping or imputing those rows; resolve missing values during dataset review or preparation first.
+The application training workflow is intentionally fixed to the bundled Cleveland dataset. It keeps all 13 canonical feature fields, applies median imputation inside each estimator pipeline, uses five stratified validation folds, and fits the saved artifact on all 303 usable rows. This keeps the benchmark and the deployed prediction models on the same contract.
 
 ### Supported Methods
 
 The authoritative method names, labels, parameter defaults, and constraints are returned by `GET /api/metadata/methods`.
 
-- `knn` - K-Nearest Neighbors; requires complete feature values and has a default `n_neighbors` of `5`.
-- `naive_bayes` - Gaussian Naive Bayes.
+- `naive_bayes` - Gaussian Naive Bayes, shown as Bayes in the benchmark display.
+- `knn` - K-Nearest Neighbors with `n_neighbors=5`.
 - `svm` - Support Vector Machine.
-- `decision_tree` - Decision Tree; supports `max_depth` and `min_samples_leaf`.
-- `random_forest` - Random Forest; supports `n_estimators`, `max_depth`, and `min_samples_leaf`.
-- `hist_gradient_boosting` - Histogram Gradient Boosting; supports `max_iter`, `learning_rate`, and `max_depth`.
-- `voting` - Soft Voting Ensemble built from KNN, Naive Bayes, and SVM.
 
 Training reports mean accuracy, precision, recall, and F1 values plus their standard deviations across the requested stratified folds.
 

@@ -837,7 +837,6 @@ def train_model(
         feature_fields=feature_fields,
         missing_strategy=missing_strategy,
         preserve_source=True,
-        reject_missing=method == "knn",
     )
     features = data[feature_fields]
     target = data[TARGET_FIELD]

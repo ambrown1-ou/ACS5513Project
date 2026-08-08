@@ -45,6 +45,22 @@
     {% block content %}{% endblock %}
   </main>
   <script>
+    document.querySelectorAll('.table-scroll, .results-table-shell').forEach((region) => {
+      region.tabIndex = 0;
+
+      const updateScrollCue = () => {
+        const hasOverflow = region.scrollWidth > region.clientWidth + 1;
+        const isAtEnd = region.scrollLeft + region.clientWidth >= region.scrollWidth - 1;
+        region.classList.toggle('is-overflowing', hasOverflow);
+        region.classList.toggle('is-at-end', isAtEnd);
+      };
+
+      region.addEventListener('scroll', updateScrollCue, { passive: true });
+      window.addEventListener('resize', updateScrollCue);
+      new MutationObserver(updateScrollCue).observe(region, { childList: true, subtree: true });
+      updateScrollCue();
+    });
+
     document.addEventListener('click', (event) => {
       const dismissButton = event.target.closest('[data-dismiss-flash]');
       if (!dismissButton) return;

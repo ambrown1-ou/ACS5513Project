@@ -2,25 +2,53 @@
 {% block content %}
 <a class="back" href="{{ url_for('web.index') }}">&larr; Return to Introduction</a>
 <section class="page-heading">
-  <p class="eyebrow">Model Deployment</p>
-  <h1>Prediction Test</h1>
-  <p class="lede">Enter patient measurements and review the trained model's output for a single case.</p>
+  <p class="eyebrow">Clinical Inference</p>
+  <h1>Patient profile</h1>
+  <p class="lede">Build a complete Cleveland-schema profile and compare one case against the selected trained model.</p>
 </section>
-<form class="form-panel" method="post" data-api-form="prediction">
-  <div class="form-grid form-grid--single">
-    <label>Deployment Model
+
+<div class="prediction-layout">
+  <aside class="prediction-rail">
+    <div class="prediction-rail-number">01</div>
+    <p class="eyebrow">Single-case inference</p>
+    <h2>Clinical signals, organized.</h2>
+    <p>Use the domain menus for coded fields and the bounded numeric inputs for measured values. Every control maps directly to the bundled Cleveland schema.</p>
+    <div class="prediction-rail-rule"></div>
+    <dl class="prediction-contract">
+      <div><dt>Inputs</dt><dd>13 schema fields</dd></div>
+      <div><dt>Output</dt><dd>Class + probability</dd></div>
+      <div><dt>Models</dt><dd>Bayes / KNN / SVM</dd></div>
+    </dl>
+  </aside>
+
+  <form class="form-panel prediction-form" method="post" data-api-form="prediction">
+    <div class="prediction-form-header">
+      <div>
+        <p class="eyebrow">Deployment model</p>
+        <h2>Choose a trained baseline</h2>
+      </div>
+      <span class="prediction-live-mark"><span aria-hidden="true"></span> Ready for input</span>
+    </div>
+    <label class="prediction-model-field">Model
       <select name="model_id" data-prediction-model required>
         <option value="" disabled selected>Loading models...</option>
       </select>
-      <span class="hint">Choose which trained model to use for this test.</span>
+      <span class="hint">The benchmarked Cleveland artifacts are available here.</span>
     </label>
-  </div>
-  <div class="form-grid" data-prediction-fields aria-live="polite">
-    <p class="field-help">Loading model input fields...</p>
-  </div>
-  <button type="submit">Run model <span aria-hidden="true">&#8594;</span></button>
-  <p class="api-status" data-api-status hidden role="status"></p>
-  <div class="api-result" data-prediction-result hidden role="status"></div>
-</form>
+    <div class="prediction-fields-heading">
+      <div>
+        <p class="eyebrow">Patient data</p>
+        <h3>Complete the profile</h3>
+      </div>
+      <span data-prediction-field-count>Loading fields...</span>
+    </div>
+    <div class="prediction-fields" data-prediction-fields aria-live="polite">
+      <p class="field-help">Loading model input fields...</p>
+    </div>
+    <button class="prediction-submit" type="submit">Run prediction <span aria-hidden="true">&#8594;</span></button>
+    <p class="api-status" data-api-status hidden role="status"></p>
+    <div class="api-result" data-prediction-result hidden role="status"></div>
+  </form>
+</div>
 <script src="{{ url_for('static', filename='form_builder.js') }}" defer></script>
 {% endblock %}
