@@ -49,6 +49,19 @@ VALIDATION_MODES = {"NORMAL", "NO_TEST"}
 INTAKE_STATUSES = {"mapping", "review", "ready", "trusted", "legacy"}
 BUNDLED_DATASET_KEY = "heart_disease_cleveland_cleaned"
 SUPPORTED_APP_METHODS = ("naive_bayes", "knn", "svm")
+PRODUCTION_WRITE_ERROR = "Not authorized to modify production data or models."
+
+
+def is_production_environment():
+    stage = (os.getenv("PIPELINE_STAGE") or "PROD").strip().upper()
+    return stage not in {"DEV", "QA"}
+
+
+def production_write_denied():
+    return jsonify({
+        "error": PRODUCTION_WRITE_ERROR,
+        "code": "PRODUCTION_WRITE_FORBIDDEN",
+    }), 403
 
 
 # ============================================================================
@@ -855,6 +868,9 @@ def delete_dataset(dataset_key):
         - 404: Dataset not found
         - 500: Deletion failed
     """
+    if is_production_environment():
+        return production_write_denied()
+
     datasets = get_datasets()
     dataset = datasets.get(dataset_key)
 
@@ -1162,6 +1178,9 @@ def _train_model_from_payload(payload, bundled_only=False, include_visualization
 @api.post("/models/train")
 def train_model_api():
     """Train one model, using the fixed bundled configuration for Cleveland."""
+    if is_production_environment():
+        return production_write_denied()
+
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Request body must be a JSON object."}), 400
@@ -1184,6 +1203,9 @@ def train_model_api():
 @api.post("/models/train-all")
 def train_all_models_api():
     """Train and register Bayes, KNN, and SVM on the bundled Cleveland data."""
+    if is_production_environment():
+        return production_write_denied()
+
     payload = request.get_json(silent=True) or {}
     if not isinstance(payload, dict):
         return jsonify({"error": "Request body must be a JSON object."}), 400
@@ -1229,6 +1251,9 @@ def delete_model_api(model_id):
         - 404: Model not found
         - 500: Deletion failed
     """
+    if is_production_environment():
+        return production_write_denied()
+
     try:
         deleted_model = delete_registered_model(model_id)
         return jsonify({

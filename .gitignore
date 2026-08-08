@@ -12,3 +12,6 @@ storage/models/*
 !storage/registry/
 storage/registry/*
 !storage/registry/training_results.json
+deploy_qa.bat
+promote_qa_to_production.bat
+.gitignore

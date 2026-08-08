@@ -29,7 +29,9 @@ from .api import (
     BUNDLED_DATASET_KEY,
     SUPPORTED_APP_METHODS,
     get_datasets,
+    is_production_environment,
     list_bundled_models,
+    PRODUCTION_WRITE_ERROR,
     supported_method_catalog,
 )
 
@@ -309,6 +311,12 @@ def train():
 
     form_id = request.form.get("form_id")
 
+    if is_production_environment() and form_id in {"delete", "train", "train_all"}:
+        flash(PRODUCTION_WRITE_ERROR, "error")
+        if form_id == "delete":
+            return redirect(manage_page_url())
+        return redirect(url_for("web.train", view="train-model"))
+
     # All form submissions call the API - web layer just handles responses and redirects
     if form_id == "upload":
         uploaded_file = request.files.get("data_file")
@@ -525,6 +533,10 @@ def view_results():
     if request.method == "POST":
         if request.form.get("form_id") != "delete":
             flash("Invalid model action.", "error")
+            return redirect(url_for("web.view_results"))
+
+        if is_production_environment():
+            flash(PRODUCTION_WRITE_ERROR, "error")
             return redirect(url_for("web.view_results"))
 
         model_id = request.form.get("model_id", "")

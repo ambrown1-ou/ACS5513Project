@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 from io import BytesIO
 from pathlib import Path
@@ -15,6 +16,8 @@ api = importlib.import_module("app.api")
 
 class ApiMappingTests(unittest.TestCase):
     def setUp(self):
+        self.pipeline_stage = patch.dict(os.environ, {"PIPELINE_STAGE": "QA"})
+        self.pipeline_stage.start()
         self.client = app.test_client()
         self.root = TemporaryDirectory()
         root = Path(self.root.name)
@@ -38,6 +41,7 @@ class ApiMappingTests(unittest.TestCase):
 
     def tearDown(self):
         self.patches.stop()
+        self.pipeline_stage.stop()
         self.root.cleanup()
 
     def upload(self, validation_mode="NORMAL"):
@@ -326,6 +330,24 @@ class ApiMappingTests(unittest.TestCase):
             "thalach", "exang", "oldpeak", "slope", "ca", "thal",
         ])
         self.assertEqual(train.call_args.kwargs["missing_strategy"], "impute")
+
+    def test_production_blocks_model_and_dataset_mutations(self):
+        with patch.dict(os.environ, {"PIPELINE_STAGE": "PROD"}), patch.object(api, "train_model") as train, patch.object(
+            api, "delete_registered_model"
+        ) as delete_model:
+            responses = [
+                self.client.post("/api/models/train", json={}),
+                self.client.post("/api/models/train-all", json={}),
+                self.client.delete("/api/datasets/uploaded"),
+                self.client.delete("/api/models/model-id"),
+            ]
+
+        for response in responses:
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.get_json()["error"], api.PRODUCTION_WRITE_ERROR)
+            self.assertEqual(response.get_json()["code"], "PRODUCTION_WRITE_FORBIDDEN")
+        train.assert_not_called()
+        delete_model.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import json
 import importlib
+import os
 import re
 import unittest
 from io import BytesIO
@@ -16,6 +17,13 @@ from model.pipeline import FEATURE_FIELDS
 
 
 class RouteTests(unittest.TestCase):
+    def setUp(self):
+        self.pipeline_stage = patch.dict(os.environ, {"PIPELINE_STAGE": "QA"})
+        self.pipeline_stage.start()
+
+    def tearDown(self):
+        self.pipeline_stage.stop()
+
     def test_landing_page_combines_project_context_and_method_sections(self):
         response = app.test_client().get("/")
 
@@ -403,6 +411,22 @@ class RouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 302)
         delete_model.assert_called_once_with("heart_knn_001")
+
+    def test_production_write_actions_show_generic_authorization_message(self):
+        with patch.dict(os.environ, {"PIPELINE_STAGE": "PROD"}):
+            train_response = app.test_client().post(
+                "/train",
+                data={"form_id": "train_all"},
+                follow_redirects=True,
+            )
+            results_response = app.test_client().post(
+                "/results",
+                data={"form_id": "delete", "model_id": "heart_knn_001"},
+                follow_redirects=True,
+            )
+
+        self.assertIn(api.PRODUCTION_WRITE_ERROR, train_response.get_data(as_text=True))
+        self.assertIn(api.PRODUCTION_WRITE_ERROR, results_response.get_data(as_text=True))
 
 
 if __name__ == "__main__":
